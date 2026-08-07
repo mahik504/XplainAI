@@ -1,0 +1,4 @@
+packages:
+  - frontend
+  - shared/packages/contracts-ts
+  - shared/codegen

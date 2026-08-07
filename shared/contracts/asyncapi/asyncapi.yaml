@@ -1,0 +1,35 @@
+asyncapi: 3.0.0
+
+info:
+  title: Neural Navigator Realtime API
+  version: 1.0.0
+  description: >-
+    WebSocket protocol for streaming agent execution. Every frame is a JSON object
+    carrying a discriminant `type`, a `session_id`, and a monotonic `seq` used by the
+    client to detect gaps and request replay after a reconnect.
+
+servers:
+  local:
+    host: localhost:8000
+    protocol: ws
+    pathname: /ws/v1
+  production:
+    host: api.neural-navigator.example.com
+    protocol: wss
+    pathname: /ws/v1
+    security:
+      - $ref: '#/components/securitySchemes/bearerAuth'
+
+# Channels, operations and message payloads are declared here and reference
+# ../json-schema/. Populated during the protocol design step.
+channels: {}
+operations: {}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  messages: {}
+  schemas: {}

@@ -1,0 +1,19 @@
+[project]
+name = "nn-contracts"
+version = "0.1.0"
+description = "Generated Pydantic models for the Neural Navigator API contracts."
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.9",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nn_contracts"]
+
+[tool.ruff]
+# Generated modules are excluded from style enforcement by design.
+extend-exclude = ["src/nn_contracts/generated"]

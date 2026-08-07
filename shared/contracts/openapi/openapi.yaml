@@ -1,0 +1,41 @@
+openapi: 3.1.0
+
+info:
+  title: Neural Navigator API
+  version: 1.0.0
+  description: >-
+    REST surface for session management, agent runs, and knowledge resources.
+    Streaming interaction is described separately in ../asyncapi/asyncapi.yaml.
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development
+  - url: https://api.neural-navigator.example.com/api/v1
+    description: Production
+
+tags:
+  - name: health
+    description: Liveness and readiness probes
+  - name: sessions
+    description: Conversation session lifecycle
+  - name: runs
+    description: Agent graph executions
+  - name: knowledge
+    description: Document ingestion and retrieval
+
+security:
+  - bearerAuth: []
+
+# Paths are declared here and reference ./components/*.yaml.
+# Populated during the API design step; see shared/README.md.
+paths: {}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas: {}
+  responses: {}
+  parameters: {}

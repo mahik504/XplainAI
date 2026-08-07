@@ -1,0 +1,19 @@
+{
+  "name": "@neural-navigator/codegen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contract validation and client generation for both languages.",
+  "scripts": {
+    "lint": "redocly lint ../contracts/openapi/openapi.yaml && asyncapi validate ../contracts/asyncapi/asyncapi.yaml",
+    "generate": "pnpm generate:ts && pnpm generate:zod",
+    "generate:ts": "openapi-typescript ../contracts/openapi/openapi.yaml -o ../packages/contracts-ts/src/generated/http.ts",
+    "generate:zod": "ts-to-zod --config ./ts-to-zod.config.cjs",
+    "diff": "redocly diff ../contracts/openapi/openapi.yaml"
+  },
+  "devDependencies": {
+    "@asyncapi/cli": "^2.6.0",
+    "@redocly/cli": "^1.25.0",
+    "openapi-typescript": "^7.4.0",
+    "ts-to-zod": "^3.13.0"
+  }
+}
