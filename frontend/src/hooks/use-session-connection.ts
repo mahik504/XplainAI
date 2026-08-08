@@ -17,6 +17,7 @@ export function useSessionConnection(): void {
         setModelCatalog({
           provider: models.provider,
           defaultModel: models.default_model,
+          models: Array.isArray(models.models) ? models.models : [],
         });
       })
       .catch(() => {

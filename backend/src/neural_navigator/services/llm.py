@@ -331,7 +331,12 @@ class LLMService:
         return self._settings.default_chat_model
 
     def resolve_model(self, requested: str | None) -> str:
-        return requested or self._settings.default_chat_model
+        from neural_navigator.services.model_registry import resolve_allowed_model
+
+        return resolve_allowed_model(
+            requested,
+            default_model=self._settings.default_chat_model,
+        )
 
     async def stream_chat(
         self,

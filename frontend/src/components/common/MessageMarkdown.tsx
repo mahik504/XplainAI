@@ -55,6 +55,16 @@ const blockComponents: Components = {
     </blockquote>
   ),
   hr: () => <hr className="my-3 border-border/60" />,
+  table: ({ children }) => (
+    <div className="my-2 overflow-x-auto">
+      <table className="w-full border-collapse text-left text-[12px]">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="border-b border-border/60">{children}</thead>,
+  th: ({ children }) => <th className="px-2 py-1.5 font-semibold text-foreground">{children}</th>,
+  td: ({ children }) => (
+    <td className="border-t border-border/40 px-2 py-1.5 text-foreground/90">{children}</td>
+  ),
 };
 
 /** Inline-only markdown for annotated sentence chips (keeps chip layout intact). */

@@ -1,7 +1,9 @@
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import { motion } from "framer-motion";
 import {
+  FileText,
   Link2,
+  MessageCircleQuestion,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
@@ -22,7 +24,7 @@ export type RunFlowNode = Node<
     tone: RunNodeTone;
     subtitle?: string;
     structureKind?: StructureNodeKind;
-    structureCategory?: ResponseStructureCategory;
+    structureCategory?: ResponseStructureCategory | "meta";
     count?: number;
     confidence?: number;
     emptySupport?: boolean;
@@ -33,6 +35,8 @@ export type RunFlowNode = Node<
 >;
 
 const STRUCTURE_ICONS: Record<StructureNodeKind, LucideIcon> = {
+  question: MessageCircleQuestion,
+  response: FileText,
   assertion: ShieldCheck,
   evidence: Sparkles,
   connector: Waypoints,
@@ -50,10 +54,6 @@ function RunNodeComponent({ data, selected }: NodeProps<RunFlowNode>) {
   );
   const setHighlightCategory = useUIStore((state) => state.setHighlightCategory);
   const Icon = structureKind ? STRUCTURE_ICONS[structureKind] : null;
-  const confidencePct =
-    typeof data.confidence === "number" && Number.isFinite(data.confidence)
-      ? Math.round(data.confidence * 100)
-      : null;
 
   return (
     <motion.div
@@ -67,11 +67,15 @@ function RunNodeComponent({ data, selected }: NodeProps<RunFlowNode>) {
       transition={{ type: "spring", stiffness: 280, damping: 26, mass: 0.85 }}
       onMouseEnter={() => {
         if (focusActive) return;
-        if (structureCategory) setHighlightCategory(structureCategory);
+        if (structureCategory && structureCategory !== "meta") {
+          setHighlightCategory(structureCategory);
+        }
       }}
       onMouseLeave={() => {
         if (focusActive) return;
-        if (structureCategory) setHighlightCategory(null);
+        if (structureCategory && structureCategory !== "meta") {
+          setHighlightCategory(null);
+        }
       }}
       className={cn(
         "nn-node",
@@ -111,8 +115,8 @@ function RunNodeComponent({ data, selected }: NodeProps<RunFlowNode>) {
         ) : null}
         <span className="nn-node__label">{data.label}</span>
         {data.subtitle ? <span className="nn-node__subtitle">{data.subtitle}</span> : null}
-        {confidencePct !== null ? (
-          <span className="nn-node__meta">{String(confidencePct)}% match</span>
+        {typeof data.count === "number" && data.count > 0 ? (
+          <span className="nn-node__meta">{String(data.count)}</span>
         ) : null}
       </span>
       <Handle type="source" position={Position.Right} className="nn-handle" />

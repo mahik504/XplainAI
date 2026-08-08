@@ -272,11 +272,14 @@ async def stream_chat_completion(
 
 @router.get(
     "/models",
-    summary="Report the model and provider this deployment will use",
+    summary="Report the model catalog and provider this deployment will use",
 )
-async def describe_models(llm: LLMServiceDep, settings: SettingsDep) -> dict[str, str]:
+async def describe_models(llm: LLMServiceDep, settings: SettingsDep) -> dict[str, object]:
+    from neural_navigator.services.model_registry import list_chat_models
+
     return {
         "provider": llm.provider_name,
         "default_model": llm.default_model,
         "environment": settings.app_env.value,
+        "models": list_chat_models(default_model=llm.default_model),
     }

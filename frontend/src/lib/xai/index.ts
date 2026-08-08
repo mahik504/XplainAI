@@ -1,3 +1,4 @@
+export { toAnalysisText } from "./analysis-text";
 export {
   analyzeResponse,
   segmentSentences,

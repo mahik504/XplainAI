@@ -40,6 +40,8 @@ interface GraphPanelProps extends PanelProps {
   surface?: "pipeline" | "structure";
   claimFocusActive?: boolean;
   onExitClaimFocus?: () => void;
+  /** Hide outer panel chrome when embedded in ExplainabilityPanel. */
+  compactChrome?: boolean;
 }
 
 const emptyNodes: Node[] = [];
@@ -59,6 +61,7 @@ export function GraphPanel({
   surface = "pipeline",
   claimFocusActive = false,
   onExitClaimFocus,
+  compactChrome = false,
 }: GraphPanelProps) {
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(nodes);
   const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState(edges);
@@ -77,36 +80,22 @@ export function GraphPanel({
   const activeNodeId = useMemo(() => resolveActiveNodeId(flowNodes), [flowNodes]);
   const focusNodeId = claimFocusActive ? ASSERTION_NODE_ID : null;
 
-  return (
-    <PanelShell
-      icon={Workflow}
-      title={title}
-      description={description}
-      active={active}
-      className={className}
-      contentClassName="relative"
-      actions={
-        <div className="flex items-center gap-2">
-          {claimFocusActive && onExitClaimFocus ? (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1.5 px-2 text-[11px]"
-              onClick={onExitClaimFocus}
-            >
-              <ArrowLeft className="size-3" />
-              Back
-            </Button>
-          ) : null}
-          {!isEmpty ? (
-            <Badge variant={claimFocusActive ? "cyan" : surface === "structure" ? "emerald" : "violet"}>
-              {claimFocusActive ? "Focus" : `${String(flowNodes.length)} nodes`}
-            </Badge>
-          ) : null}
+  const body = (
+    <>
+      {compactChrome && claimFocusActive && onExitClaimFocus ? (
+        <div className="absolute top-2 left-2 z-20">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5 px-2 text-[11px]"
+            onClick={onExitClaimFocus}
+          >
+            <ArrowLeft className="size-3" />
+            Back
+          </Button>
         </div>
-      }
-    >
+      ) : null}
       <div
         className={cn(
           "size-full transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -175,7 +164,49 @@ export function GraphPanel({
         </div>
       ) : null}
 
-      {surface === "structure" && !isEmpty ? <StructureLegend /> : null}
+      {surface === "structure" && !isEmpty && !compactChrome ? <StructureLegend /> : null}
+    </>
+  );
+
+  if (compactChrome) {
+    return (
+      <div className={cn("relative size-full", className)} data-active={active ? "true" : undefined}>
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <PanelShell
+      icon={Workflow}
+      title={title}
+      description={description}
+      active={active}
+      className={className}
+      contentClassName="relative"
+      actions={
+        <div className="flex items-center gap-2">
+          {claimFocusActive && onExitClaimFocus ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2 text-[11px]"
+              onClick={onExitClaimFocus}
+            >
+              <ArrowLeft className="size-3" />
+              Back
+            </Button>
+          ) : null}
+          {!isEmpty ? (
+            <Badge variant={claimFocusActive ? "cyan" : surface === "structure" ? "emerald" : "violet"}>
+              {claimFocusActive ? "Focus" : `${String(flowNodes.length)} nodes`}
+            </Badge>
+          ) : null}
+        </div>
+      }
+    >
+      {body}
     </PanelShell>
   );
 }

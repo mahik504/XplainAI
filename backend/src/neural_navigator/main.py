@@ -28,6 +28,9 @@ from neural_navigator.core.config import Settings, get_settings
 from neural_navigator.core.dependencies import get_request_id
 from neural_navigator.core.logging import RequestContextMiddleware, configure_logging
 from neural_navigator.schemas.base import ErrorItem, problem_from_exception, serialise_problem
+from pathlib import Path
+
+from neural_navigator.services.conversations import ConversationStore
 from neural_navigator.services.events import InMemoryEventBus
 from neural_navigator.services.llm import LLMService, build_llm_provider
 from neural_navigator.utils.constants import (
@@ -49,9 +52,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     event_bus = InMemoryEventBus(max_queue_size=EVENT_QUEUE_MAX_SIZE)
     llm_service = LLMService(provider=build_llm_provider(settings), settings=settings)
+    conversation_store = ConversationStore(Path(settings.conversation_db_path))
 
     app.state.event_bus = event_bus
     app.state.llm_service = llm_service
+    app.state.conversation_store = conversation_store
     app.state.started_at = time.monotonic()
 
     _logger.info(

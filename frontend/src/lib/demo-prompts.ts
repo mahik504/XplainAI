@@ -70,4 +70,4 @@ export function getShowcasePrompt(): DemoPrompt {
 }
 
 export const EVIDENCE_DEMAND_PREFILL =
-  "Can you provide evidence for this claim?";
+  "Can you provide evidence supporting this claim?";

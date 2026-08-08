@@ -4,10 +4,10 @@
   "private": true,
   "description": "Contract validation and client generation for both languages.",
   "scripts": {
-    "lint": "redocly lint ../contracts/openapi/openapi.yaml && asyncapi validate ../contracts/asyncapi/asyncapi.yaml",
+    "lint": "node ./lint-contracts.mjs",
     "generate": "pnpm generate:ts && pnpm generate:zod",
     "generate:ts": "openapi-typescript ../contracts/openapi/openapi.yaml -o ../packages/contracts-ts/src/generated/http.ts",
-    "generate:zod": "ts-to-zod --config ./ts-to-zod.config.cjs",
+    "generate:zod": "ts-to-zod ../packages/contracts-ts/src/generated/http.ts ../packages/contracts-ts/src/generated/http.zod.ts --skipValidation",
     "diff": "redocly diff ../contracts/openapi/openapi.yaml"
   },
   "devDependencies": {

@@ -3,7 +3,12 @@
  *
  * Analyzes the *generated assistant text* only — sentence structure cues,
  * not model chain-of-thought or internal reasoning. Naming reflects that.
+ *
+ * Analysis runs on a markdown-stripped projection (`toAnalysisText`) so the
+ * display layer can render full Markdown without corrupting structure cues.
  */
+
+import { toAnalysisText } from "./analysis-text";
 
 export type ResponseStructureCategory =
   | "conclusion"
@@ -119,60 +124,94 @@ function isInsideUrl(text: string, index: number): boolean {
   return /^https?:\/\/\S*$/i.test(slice) || /^www\.\S*$/i.test(slice);
 }
 
-/** Split on sentence terminators while preserving offsets; skips decimals, URLs, abbreviations. */
+function maskCodeFences(text: string): { masked: string; blocks: { start: number; end: number; text: string }[] } {
+  const blocks: { start: number; end: number; text: string }[] = [];
+  const masked = text.replace(/```[\s\S]*?```/g, (match, offset: number) => {
+    blocks.push({ start: offset, end: offset + match.length, text: match });
+    return " ".repeat(match.length);
+  });
+  return { masked, blocks };
+}
+
+function pushSegment(
+  segments: { text: string; start: number; end: number }[],
+  source: string,
+  start: number,
+  end: number,
+) {
+  const piece = source.slice(start, end).trim();
+  if (!piece) return;
+  const localStart = source.indexOf(piece, start);
+  if (localStart < 0) return;
+  segments.push({
+    text: piece,
+    start: localStart,
+    end: localStart + piece.length,
+  });
+}
+
+/**
+ * Split on sentence terminators while preserving offsets.
+ * Markdown-aware: keeps fenced code as one unit; splits headings/bullets/numbered lines.
+ */
 export function segmentSentences(text: string): { text: string; start: number; end: number }[] {
-  const trimmed = text.trim();
-  if (!trimmed) return [];
+  const source = text;
+  if (!source.trim()) return [];
 
-  const baseOffset = text.indexOf(trimmed);
+  const { masked, blocks } = maskCodeFences(source);
   const segments: { text: string; start: number; end: number }[] = [];
-  let start = 0;
 
-  for (let i = 0; i < trimmed.length; i += 1) {
-    const ch = trimmed.charAt(i);
-    if (ch !== "." && ch !== "!" && ch !== "?") continue;
+  // Prefer line-oriented split for markdown structure.
+  const lineRe = /[^\n]+/g;
+  let lineMatch: RegExpExecArray | null;
+  while ((lineMatch = lineRe.exec(masked)) !== null) {
+    const lineStart = lineMatch.index;
+    const lineEnd = lineStart + lineMatch[0].length;
+    const line = source.slice(lineStart, lineEnd);
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
 
-    if (ch === ".") {
-      if (isDecimalDot(trimmed, i)) continue;
-      if (isAbbreviationDot(trimmed, i)) continue;
-      if (isInsideUrl(trimmed, i)) continue;
+    const isMdBlock =
+      /^(#{1,6}\s+|[-*+]\s+|\d+\.\s+|>\s+)/.test(trimmedLine) ||
+      trimmedLine.startsWith("```");
+
+    if (isMdBlock) {
+      pushSegment(segments, source, lineStart, lineEnd);
+      continue;
     }
 
-    // Consume trailing quotes/brackets
-    let end = i + 1;
-    while (end < trimmed.length && /["')\]]/.test(trimmed.charAt(end))) {
-      end += 1;
+    let start = lineStart;
+    for (let i = lineStart; i < lineEnd; i += 1) {
+      const ch = masked.charAt(i);
+      if (ch !== "." && ch !== "!" && ch !== "?") continue;
+      if (ch === ".") {
+        if (isDecimalDot(masked, i)) continue;
+        if (isAbbreviationDot(masked, i)) continue;
+        if (isInsideUrl(masked, i)) continue;
+      }
+      let end = i + 1;
+      while (end < lineEnd && /["')\]]/.test(masked.charAt(end))) end += 1;
+      pushSegment(segments, source, start, end);
+      start = end;
+      while (start < lineEnd && /\s/.test(masked.charAt(start))) start += 1;
+      i = start - 1;
     }
-
-    const piece = trimmed.slice(start, end).trim();
-    if (piece.length > 0) {
-      const localStart = trimmed.indexOf(piece, start);
-      segments.push({
-        text: piece,
-        start: baseOffset + localStart,
-        end: baseOffset + localStart + piece.length,
-      });
-    }
-
-    start = end;
-    while (start < trimmed.length && /\s/.test(trimmed.charAt(start))) {
-      start += 1;
-    }
-    i = start - 1;
-  }
-
-  if (start < trimmed.length) {
-    const piece = trimmed.slice(start).trim();
-    if (piece.length > 0) {
-      const localStart = trimmed.indexOf(piece, start);
-      segments.push({
-        text: piece,
-        start: baseOffset + localStart,
-        end: baseOffset + localStart + piece.length,
-      });
+    if (start < lineEnd) {
+      pushSegment(segments, source, start, lineEnd);
     }
   }
 
+  // Restore/ensure fenced code blocks appear as dedicated segments if missed.
+  for (const block of blocks) {
+    const overlaps = segments.some(
+      (segment) => segment.start < block.end && segment.end > block.start,
+    );
+    if (!overlaps) {
+      segments.push({ text: block.text, start: block.start, end: block.end });
+    }
+  }
+
+  segments.sort((a, b) => a.start - b.start);
   return segments;
 }
 
@@ -180,6 +219,13 @@ function classifySentence(sentence: string): { category: ResponseStructureCatego
   const text = sentence.trim();
   if (text.length === 0) {
     return { category: "neutral", confidence: 1 };
+  }
+
+  if (text.startsWith("```")) {
+    return { category: "neutral", confidence: 0.95 };
+  }
+  if (/^#{1,6}\s+/.test(text)) {
+    return { category: "conclusion", confidence: 0.7 };
   }
 
   // Priority: Conclusion → Reasoning → Evidence → Example → Hedge → Claim → Neutral
@@ -298,7 +344,7 @@ const EMPTY_ANALYSIS: ResponseStructureAnalysis = {
 
 /** Analyze final assistant response structure. Pure; safe to memoize by text. */
 export function analyzeResponse(text: string): ResponseStructureAnalysis {
-  const source = text.trim();
+  const source = toAnalysisText(text);
   if (!source) {
     return EMPTY_ANALYSIS;
   }

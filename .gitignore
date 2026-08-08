@@ -35,6 +35,7 @@ test-results/
 logs/
 *.log
 .data/
+backend/.data/
 
 # Local capture scratch (keep docs/screenshots and docs/demo tracked assets)
 *.mov

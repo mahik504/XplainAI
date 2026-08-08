@@ -97,6 +97,8 @@ class ServerMessageType(StrEnum):
     RUN_STARTED = "run.started"
     RUN_TOKEN = "run.token"
     RUN_FINISHED = "run.finished"
+    STAGE_STARTED = "stage.started"
+    STAGE_COMPLETE = "stage.complete"
     HEARTBEAT = "heartbeat"
     PONG = "pong"
     ERROR = "error"

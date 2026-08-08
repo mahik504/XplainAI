@@ -168,6 +168,22 @@ class RunFinishedFrame(WSServerFrame):
     run_id: str
     finish_reason: FinishReason
     usage: Usage | None = None
+    mode: str | None = None
+    orchestration: dict[str, object] | None = None
+
+
+class StageStartedFrame(WSServerFrame):
+    type: Literal[ServerMessageType.STAGE_STARTED] = ServerMessageType.STAGE_STARTED
+    run_id: str
+    stage: str
+    detail: dict[str, object] | None = None
+
+
+class StageCompleteFrame(WSServerFrame):
+    type: Literal[ServerMessageType.STAGE_COMPLETE] = ServerMessageType.STAGE_COMPLETE
+    run_id: str
+    stage: str
+    result: dict[str, object] | None = None
 
 
 class HeartbeatFrame(WSServerFrame):
@@ -190,6 +206,8 @@ ServerFrame = Annotated[
     | RunStartedFrame
     | RunTokenFrame
     | RunFinishedFrame
+    | StageStartedFrame
+    | StageCompleteFrame
     | HeartbeatFrame
     | PongFrame
     | ErrorFrame,

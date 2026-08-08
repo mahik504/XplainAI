@@ -19,16 +19,21 @@ Built for hackathon demos and serious explainability UX.
 
 ## Features
 
-- Live WebSocket streaming (FastAPI)
-- Reasoning Pipeline → Response Structure morph
+- Live WebSocket streaming (FastAPI) with mode-aware orchestration stages
+- Modes: **Fast** · **Balanced** · **Deep Research** (real backend routing)
+- Optional tools (calculator, web search; news/weather via env keys)
+- Conversation history (SQLite) with New / reopen / delete
+- Reasoning / orchestration stages → Response Structure morph
 - Response Structure Analysis (claims, evidence, hedges, connectors)
 - Hover synchronization (chat ↔ graph)
 - Claim Focus Mode + ESC exit
 - Evidence Demand (`?` → composer prefill)
-- Trust Signals from structure + session metrics
+- Structural signals from observable response text (not “AI confidence”)
 - Timeline + Replay
 - Demo Mode / Story Mode / Judge Mode (3‑minute showcase)
 - OpenAI streaming provider (`LLM_PROVIDER=openai`) with Echo offline fallback
+
+XplainAI analyzes **observable response structure**. It does **not** expose hidden model chain-of-thought.
 
 ## Architecture
 

@@ -2,12 +2,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo } from "react";
 import type { Node, NodeMouseHandler } from "@xyflow/react";
 
-import { NodeInspector } from "@/components/common/NodeInspector";
 import { ChatPanel } from "@/features/conversation";
 import { DemoLanding, StoryGuide } from "@/features/demo";
-import { GraphPanel } from "@/features/graph-visualizer";
-import { TimelinePanel } from "@/features/timeline";
-import { TrustPanel } from "@/features/trust";
+import { ExplainabilityPanel } from "@/features/explainability";
+import { HistorySidebar } from "@/features/history";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useStoryOrchestration } from "@/hooks/use-story-orchestration";
 import {
@@ -21,12 +19,15 @@ import { getShowcasePrompt, type DemoPrompt } from "@/lib/demo-prompts";
 import { buildResponseStructureGraph, isStructureNodeData } from "@/lib/response-graph";
 import { buildRunGraph } from "@/lib/run-graph";
 import { primaryUnsupportedAssertionId } from "@/lib/unsupported-claims";
+import { useConversationStore } from "@/stores/conversation-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useUIStore } from "@/stores/ui-store";
 
 export function WorkspacePage() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const showHistoryRail = useMediaQuery("(min-width: 1280px)");
   const activePanel = useUIStore((state) => state.activePanel);
+  const setActivePanel = useUIStore((state) => state.setActivePanel);
   const replayPhase = useUIStore((state) => state.replayPhase);
   const isReplaying = useUIStore((state) => state.isReplaying);
   const stopReplay = useUIStore((state) => state.stopReplay);
@@ -52,19 +53,33 @@ export function WorkspacePage() {
   const lastErrorCode = useSessionStore((state) => state.lastErrorCode);
   const graphNodes = useSessionStore((state) => state.graphNodes);
   const graphEdges = useSessionStore((state) => state.graphEdges);
-  const timeline = useSessionStore((state) => state.timeline);
-  const trustScore = useSessionStore((state) => state.trustScore);
-  const trustSignals = useSessionStore((state) => state.trustSignals);
-  const trustHistory = useSessionStore((state) => state.trustHistory);
   const responseAnalysis = useSessionStore((state) => state.responseAnalysis);
   const sendMessage = useSessionStore((state) => state.sendMessage);
+  const retryLast = useSessionStore((state) => state.retryLast);
   const stop = useSessionStore((state) => state.stop);
   const setSelectedNodeId = useSessionStore((state) => state.setSelectedNodeId);
   const selectedNodeId = useSessionStore((state) => state.selectedNodeId);
   const activeModel = useSessionStore((state) => state.activeModel);
   const phase = useSessionStore((state) => state.phase);
+  const runMode = useSessionStore((state) => state.runMode);
+  const setRunMode = useSessionStore((state) => state.setRunMode);
+  const sourcesRetrieved = useSessionStore((state) => state.sourcesRetrieved);
+  const retrievedSources = useSessionStore((state) => state.retrievedSources);
+  const missingContext = useSessionStore((state) => state.missingContext);
+  const counterPerspective = useSessionStore((state) => state.counterPerspective);
+  const stageEvents = useSessionStore((state) => state.stageEvents);
+  const ensureActiveConversation = useConversationStore((state) => state.ensureActiveConversation);
+  const setConversationMode = useConversationStore((state) => state.setConversationMode);
+  const hydrateConversations = useConversationStore((state) => state.hydrate);
+
+  const demoLandingDismissed = useUIStore((state) => state.demoLandingDismissed);
+  const dismissDemoLanding = useUIStore((state) => state.dismissDemoLanding);
 
   useStoryOrchestration();
+
+  useEffect(() => {
+    void hydrateConversations();
+  }, [hydrateConversations]);
 
   const chatDisabled = connection !== "live" || isReplaying;
   const chatError =
@@ -75,8 +90,6 @@ export function WorkspacePage() {
       : null;
 
   const claimFocusActive = focusedAssertionId !== null && !isReplaying;
-  const demoLandingDismissed = useUIStore((state) => state.demoLandingDismissed);
-  const dismissDemoLanding = useUIStore((state) => state.dismissDemoLanding);
   const showDemoLanding =
     messages.length === 0 &&
     !isStreaming &&
@@ -91,7 +104,6 @@ export function WorkspacePage() {
     }
   }, [isStreaming, isReplaying, replayPhase, stopReplay]);
 
-  // Pipeline while streaming / starting; morph to structure 250ms after finish.
   useEffect(() => {
     if (isStreaming || phase === "started" || phase === "streaming" || phase === "idle") {
       if (graphSurface !== "pipeline") setGraphSurface("pipeline");
@@ -125,7 +137,6 @@ export function WorkspacePage() {
     setSelectedNodeId,
   ]);
 
-  // ESC exits Claim Focus Mode.
   useEffect(() => {
     if (!claimFocusActive) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -151,7 +162,6 @@ export function WorkspacePage() {
     }
     if (graphSurface === "structure" && structureGraph) {
       if (structureGraph.nodes.length === 0) {
-        // Empty finished analysis — keep structure surface (do not fall back to pipeline).
         return { nodes: [], edges: [] };
       }
       if (claimFocusActive) {
@@ -179,7 +189,6 @@ export function WorkspacePage() {
     !(replayPhase && replayPhase !== "idle") &&
     Boolean(structureGraph);
 
-  // Empty structure must never leave Claim Focus stuck.
   useEffect(() => {
     if (!showingStructure) return;
     if (structureGraph && structureGraph.nodes.length === 0 && focusedAssertionId !== null) {
@@ -189,11 +198,10 @@ export function WorkspacePage() {
 
   const claimMetrics = useMemo(() => {
     if (!claimFocusActive || !responseAnalysis || !focusedAssertionId) return null;
-    return buildClaimFocusMetrics(responseAnalysis, focusedAssertionId);
-  }, [claimFocusActive, focusedAssertionId, responseAnalysis]);
-
-  const canReplay =
-    !isStreaming && phase !== "idle" && (phase === "finished" || phase === "failed" || phase === "cancelled");
+    return buildClaimFocusMetrics(responseAnalysis, focusedAssertionId, {
+      retrievedSourcesCount: sourcesRetrieved,
+    });
+  }, [claimFocusActive, focusedAssertionId, responseAnalysis, sourcesRetrieved]);
 
   const onNodeClick = useCallback<NodeMouseHandler<Node>>(
     (_event, node) => {
@@ -222,32 +230,45 @@ export function WorkspacePage() {
 
   const handleManualSend = useCallback(
     (text: string) => {
-      // Manual composer traffic must never be hijacked by Story / Judge timers.
       setStoryModeEnabled(false);
       stopJudgeMode();
       setStoryStep(null);
-      sendMessage(text);
+      void (async () => {
+        const conversationId = await ensureActiveConversation();
+        if (conversationId) setConversationMode(conversationId, runMode);
+        sendMessage(text, { conversationId });
+      })();
     },
-    [sendMessage, setStoryModeEnabled, setStoryStep, stopJudgeMode],
+    [
+      ensureActiveConversation,
+      runMode,
+      sendMessage,
+      setConversationMode,
+      setStoryModeEnabled,
+      setStoryStep,
+      stopJudgeMode,
+    ],
   );
 
+  const handleRetry = useCallback(() => {
+    void (async () => {
+      const conversationId = await ensureActiveConversation();
+      retryLast({ conversationId });
+    })();
+  }, [ensureActiveConversation, retryLast]);
+
   const launchPrompt = useCallback(
-    (prompt: DemoPrompt, asShowcase: boolean) => {
-      if (connection !== "live") return;
-      if (asShowcase) {
-        startJudgeShowcase();
-      } else {
-        stopJudgeMode();
-        bumpDemoRun();
-      }
-      sendMessage(prompt.prompt);
+    (prompt: DemoPrompt, judge: boolean) => {
+      if (judge) startJudgeShowcase();
+      else bumpDemoRun();
+      handleManualSend(prompt.prompt);
     },
-    [bumpDemoRun, connection, sendMessage, startJudgeShowcase, stopJudgeMode],
+    [bumpDemoRun, handleManualSend, startJudgeShowcase],
   );
 
   const onSelectPrompt = useCallback(
     (prompt: DemoPrompt) => {
-      launchPrompt(prompt, Boolean(prompt.showcase));
+      launchPrompt(prompt, false);
     },
     [launchPrompt],
   );
@@ -256,69 +277,73 @@ export function WorkspacePage() {
     launchPrompt(getShowcasePrompt(), true);
   }, [launchPrompt]);
 
-  const graph = (
-    <GraphPanel
-      active
+  const graphTitle = claimFocusActive
+    ? "Claim Focus"
+    : showingStructure
+      ? "Response Structure"
+      : "Live pipeline";
+  const graphDescription = claimFocusActive
+    ? "Assertion-centered explainability"
+    : showingStructure
+      ? structureGraph && structureGraph.nodes.length === 0
+        ? "No explainable structure detected"
+        : "Observable structural analysis"
+      : "Stage surface while streaming";
+
+  const viewKey = claimFocusActive
+    ? `claim-focus-${focusedAssertionId}`
+    : showingStructure
+      ? `structure-${String(structureGraph?.nodes.length ?? 0)}-${structureGraph?.nodes.length === 0 ? "empty" : "ready"}`
+      : `pipeline-${phase}-${String(graphNodes.length)}`;
+
+  const sourcesEmptyHint =
+    phase === "finished" &&
+    (runMode === "balanced" || runMode === "deep_research") &&
+    retrievedSources.length === 0;
+
+  const explainability = (
+    <ExplainabilityPanel
       className="h-full"
+      isStreaming={isStreaming}
+      phase={phase}
+      runMode={runMode}
+      stageEvents={stageEvents}
       nodes={displayGraph.nodes}
       edges={displayGraph.edges}
-      cameraEnabled
-      onNodeClick={onNodeClick}
-      title={
-        claimFocusActive
-          ? "Claim Focus"
-          : showingStructure
-            ? "Response Structure"
-            : "Reasoning Pipeline"
-      }
-      description={
-        claimFocusActive
-          ? "Assertion-centered explainability"
-          : showingStructure
-            ? structureGraph && structureGraph.nodes.length === 0
-              ? "No explainable structure detected"
-              : "Observable structural analysis"
-            : "Live execution surface"
-      }
-      surface={showingStructure || claimFocusActive ? "structure" : "pipeline"}
+      showingStructure={showingStructure}
       claimFocusActive={claimFocusActive}
       onExitClaimFocus={handleExitClaimFocus}
-      viewKey={
-        claimFocusActive
-          ? `claim-focus-${focusedAssertionId}`
-          : showingStructure
-            ? `structure-${String(structureGraph?.nodes.length ?? 0)}-${structureGraph?.nodes.length === 0 ? "empty" : "ready"}`
-            : `pipeline-${phase}-${String(graphNodes.length)}`
-      }
-    />
-  );
-
-  const inspector = (
-    <AnimatePresence>
-      {selectedNodeId || claimFocusActive ? (
-        <NodeInspector key="inspector" graphSurface={showingStructure ? "structure" : "pipeline"} />
-      ) : null}
-    </AnimatePresence>
-  );
-
-  const timelinePanel = (
-    <TimelinePanel
-      active={!isDesktop && activePanel === "timeline"}
-      className="h-full"
-      events={timeline}
-      canReplay={canReplay}
-      endPhase={phase === "idle" ? "finished" : phase}
-    />
-  );
-
-  const trust = (
-    <TrustPanel
-      active={!isDesktop && activePanel === "trust"}
-      className="h-full"
-      score={trustScore}
-      signals={trustSignals}
-      history={trustHistory}
+      onNodeClick={onNodeClick}
+      viewKey={viewKey}
+      graphTitle={graphTitle}
+      graphDescription={graphDescription}
+      responseAnalysis={responseAnalysis}
       claimMetrics={claimMetrics}
+      retrievedSources={retrievedSources}
+      sourcesEmptyHint={sourcesEmptyHint}
+      missingContext={missingContext}
+      counterPerspective={counterPerspective}
+      selectedNodeId={selectedNodeId}
+    />
+  );
+
+  const chatPanel = (
+    <ChatPanel
+      active
+      floating
+      className="h-full"
+      messages={messages}
+      isStreaming={isStreaming}
+      disabled={chatDisabled}
+      error={chatError}
+      responseAnalysis={responseAnalysis}
+      runMode={runMode}
+      onRunModeChange={setRunMode}
+      sourcesLinked={sourcesRetrieved}
+      stageEvents={stageEvents}
+      onSend={handleManualSend}
+      onRetry={handleRetry}
+      onStop={stop}
     />
   );
 
@@ -353,90 +378,71 @@ export function WorkspacePage() {
 
   if (!isDesktop) {
     return (
-      <div className="relative h-full min-h-0">
-        {graph}
-        {inspector}
-        {storyGuide}
-        {demoLanding}
-
-        <AnimatePresence mode="wait">
+      <div className="relative flex h-full min-h-0 flex-col gap-2">
+        <div className="flex shrink-0 gap-1 rounded-full border border-border/50 bg-black/30 p-1">
+          {(
+            [
+              ["chat", "Chat"],
+              ["graph", "Explain"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={`flex-1 rounded-full px-3 py-1.5 text-xs transition ${
+                (id === "chat" && activePanel === "chat") ||
+                (id === "graph" && activePanel !== "chat")
+                  ? "bg-white/[0.08] text-foreground"
+                  : "text-muted-foreground"
+              }`}
+              onClick={() => {
+                setActivePanel(id === "chat" ? "chat" : "graph");
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="relative min-h-0 flex-1">
           {activePanel === "chat" ? (
             <motion.div
               key="chat"
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 16 }}
-              className="absolute inset-x-3 bottom-3 top-[18%] z-30"
+              className="absolute inset-0"
             >
-              <ChatPanel
-                active
-                floating
-                className="h-full"
-                messages={messages}
-                isStreaming={isStreaming}
-                disabled={chatDisabled}
-                error={chatError}
-                responseAnalysis={responseAnalysis}
-                onSend={handleManualSend}
-                onStop={stop}
-              />
+              {chatPanel}
+              {storyGuide}
+              {demoLanding}
             </motion.div>
-          ) : null}
-          {activePanel === "timeline" ? (
+          ) : (
             <motion.div
-              key="timeline"
-              initial={{ opacity: 0, y: 16 }}
+              key="xai"
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 16 }}
-              className="absolute inset-x-3 bottom-3 top-[35%] z-30"
+              className="absolute inset-0"
             >
-              {timelinePanel}
+              {explainability}
             </motion.div>
-          ) : null}
-          {activePanel === "trust" ? (
-            <motion.div
-              key="trust"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 16 }}
-              className="absolute inset-x-3 bottom-3 top-[35%] z-30"
-            >
-              {trust}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="os-workspace relative grid h-full min-h-0 gap-3">
-      <section className="os-hero relative min-h-0">
-        {graph}
-        {inspector}
+    <div className="relative flex h-full min-h-0 gap-3">
+      {showHistoryRail ? <HistorySidebar compact className="shrink-0" /> : null}
+
+      <section className="relative min-h-0 min-w-0 flex-[1.35]">
+        {chatPanel}
         {storyGuide}
+        {demoLanding}
       </section>
 
-      <aside className="os-chat min-h-0">
-        <ChatPanel
-          active
-          floating
-          className="h-full"
-          messages={messages}
-          isStreaming={isStreaming}
-          disabled={chatDisabled}
-          error={chatError}
-          responseAnalysis={responseAnalysis}
-          onSend={handleManualSend}
-          onStop={stop}
-        />
-      </aside>
-
-      <aside className="os-timeline min-h-0">{timelinePanel}</aside>
-
-      <aside className="os-trust min-h-0">{trust}</aside>
-
-      {demoLanding}
+      <section className="relative min-h-0 w-[min(38%,440px)] shrink-0 xl:w-[min(36%,480px)]">
+        {explainability}
+      </section>
     </div>
   );
 }

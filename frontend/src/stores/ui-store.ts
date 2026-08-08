@@ -9,6 +9,17 @@ export type WorkspacePanel = "chat" | "graph" | "trust" | "timeline";
 /** Pipeline execution graph vs finished response-structure graph */
 export type GraphSurface = "pipeline" | "structure";
 
+const DEMO_LANDING_DISMISS_KEY = "xplainai.demoLandingDismissed";
+
+function readDemoLandingDismissed(): boolean {
+  try {
+    if (typeof globalThis.localStorage === "undefined") return false;
+    return globalThis.localStorage.getItem(DEMO_LANDING_DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 interface FocusSnapshot {
   assertionId: string;
   evidenceIds: string[];
@@ -93,7 +104,7 @@ export const useUIStore = create<UIState>()((set) => ({
   evidenceDemandHighlight: false,
   composerPrefill: null,
   showcaseRunId: 0,
-  demoLandingDismissed: false,
+  demoLandingDismissed: readDemoLandingDismissed(),
   setActivePanel: (panel) => {
     set({ activePanel: panel, mobileNavOpen: false });
   },
@@ -215,6 +226,13 @@ export const useUIStore = create<UIState>()((set) => ({
     set({ composerPrefill: null });
   },
   dismissDemoLanding: () => {
+    try {
+      if (typeof globalThis.localStorage !== "undefined") {
+        globalThis.localStorage.setItem(DEMO_LANDING_DISMISS_KEY, "1");
+      }
+    } catch {
+      /* ignore quota / private-mode failures */
+    }
     set({ demoLandingDismissed: true });
   },
   setReplay: ({ phase, eventId = null, isReplaying = true }) => {

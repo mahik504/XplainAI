@@ -9,6 +9,8 @@ import type {
 
 /** Observable response-structure node kinds (not model CoT). */
 export type StructureNodeKind =
+  | "question"
+  | "response"
   | "assertion"
   | "evidence"
   | "connector"
@@ -21,13 +23,15 @@ export type StructureNodeData = {
   tone: RunNodeTone;
   structureKind: StructureNodeKind;
   /** Maps to analyzer category for hover sync */
-  structureCategory: ResponseStructureCategory;
+  structureCategory: ResponseStructureCategory | "meta";
   count: number;
   confidence: number;
   samples: string[];
 } & Record<string, unknown>;
 
 const KIND_STROKE: Record<StructureNodeKind, string> = {
+  question: "oklch(0.78 0.04 250 / 70%)",
+  response: "oklch(0.8 0.08 220 / 75%)",
   assertion: "oklch(0.82 0.135 199 / 85%)",
   evidence: "oklch(0.8 0.16 165 / 85%)",
   connector: "oklch(0.7 0.19 302 / 85%)",
@@ -36,11 +40,15 @@ const KIND_STROKE: Record<StructureNodeKind, string> = {
 };
 
 interface StructureSpec {
-  kind: StructureNodeKind;
+  kind: Exclude<StructureNodeKind, "question" | "response">;
   category: ResponseStructureCategory;
   title: string;
   sentences: ClassifiedSentence[];
   subtitle: (count: number) => string;
+  /** Column under Response (0 = left). */
+  column: number;
+  /** Nest evidence under assertion when both present. */
+  nestUnderAssertion?: boolean;
 }
 
 function averageConfidence(sentences: ClassifiedSentence[]): number {
@@ -73,7 +81,7 @@ function makeStructureEdge(
 
 /**
  * Build a Response Structure Graph from finished-response analysis.
- * Only emits nodes for categories that were actually detected.
+ * Deterministic hierarchy: Question → Response → categories.
  */
 export function buildResponseStructureGraph(
   analysis: ResponseStructureAnalysis,
@@ -85,6 +93,7 @@ export function buildResponseStructureGraph(
       title: "Assertion",
       sentences: analysis.claims,
       subtitle: (count) => (count === 1 ? "1 assertion" : `${String(count)} assertions`),
+      column: 0,
     },
     {
       kind: "evidence",
@@ -92,6 +101,8 @@ export function buildResponseStructureGraph(
       title: "Evidence Marker",
       sentences: analysis.evidence,
       subtitle: (count) => `${String(count)} detected`,
+      column: 0,
+      nestUnderAssertion: true,
     },
     {
       kind: "connector",
@@ -99,6 +110,7 @@ export function buildResponseStructureGraph(
       title: "Causal Connector",
       sentences: analysis.reasoning,
       subtitle: (count) => (count === 1 ? "1 connector" : `${String(count)} connectors`),
+      column: 1,
     },
     {
       kind: "uncertainty",
@@ -106,6 +118,7 @@ export function buildResponseStructureGraph(
       title: "Uncertainty Signal",
       sentences: analysis.hedges,
       subtitle: (count) => `${String(count)} detected`,
+      column: 2,
     },
     {
       kind: "conclusion",
@@ -113,6 +126,7 @@ export function buildResponseStructureGraph(
       title: "Conclusion",
       sentences: analysis.conclusions,
       subtitle: () => "Present",
+      column: 3,
     },
   ];
 
@@ -121,10 +135,54 @@ export function buildResponseStructureGraph(
     return { nodes: [], edges: [] };
   }
 
-  const gap = 200;
-  const nodes: Node[] = present.map((spec, index) => {
+  const hasAssertion = present.some((spec) => spec.kind === "assertion");
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+
+  nodes.push({
+    id: "structure-question",
+    type: "runNode",
+    position: { x: 280, y: 0 },
+    data: {
+      label: "Question",
+      subtitle: "User prompt",
+      tone: "complete",
+      structureKind: "question",
+      structureCategory: "meta",
+      count: 1,
+      confidence: 1,
+      samples: [],
+    } satisfies StructureNodeData,
+    className: "nn-node-wrapper",
+  });
+
+  nodes.push({
+    id: "structure-response",
+    type: "runNode",
+    position: { x: 280, y: 100 },
+    data: {
+      label: "Response",
+      subtitle: `${String(analysis.score.sentenceCount)} sentences`,
+      tone: "complete",
+      structureKind: "response",
+      structureCategory: "meta",
+      count: analysis.score.sentenceCount,
+      confidence: analysis.score.confidence,
+      samples: [],
+    } satisfies StructureNodeData,
+    className: "nn-node-wrapper",
+  });
+
+  edges.push(makeStructureEdge("e-structure-q-r", "structure-question", "structure-response", "response"));
+
+  for (const spec of present) {
     const count = spec.sentences.length;
     const confidence = averageConfidence(spec.sentences);
+    const nested =
+      spec.nestUnderAssertion && hasAssertion && spec.kind === "evidence";
+    const x = 40 + spec.column * 180;
+    const y = nested ? 320 : 220;
+
     const data: StructureNodeData = {
       label: spec.title,
       subtitle: spec.subtitle(count),
@@ -136,28 +194,33 @@ export function buildResponseStructureGraph(
       samples: spec.sentences.slice(0, 3).map((sentence) => sentence.text),
     };
 
-    return {
+    nodes.push({
       id: `structure-${spec.kind}`,
       type: "runNode",
-      position: { x: index * gap, y: 88 },
+      position: { x, y },
       data,
       className: "nn-node-wrapper",
-    };
-  });
+    });
 
-  const edges: Edge[] = [];
-  for (let i = 0; i < present.length - 1; i += 1) {
-    const source = present[i];
-    const target = present[i + 1];
-    if (!source || !target) continue;
-    edges.push(
-      makeStructureEdge(
-        `e-structure-${source.kind}-${target.kind}`,
-        `structure-${source.kind}`,
-        `structure-${target.kind}`,
-        target.kind,
-      ),
-    );
+    if (nested) {
+      edges.push(
+        makeStructureEdge(
+          `e-structure-assertion-${spec.kind}`,
+          "structure-assertion",
+          `structure-${spec.kind}`,
+          spec.kind,
+        ),
+      );
+    } else {
+      edges.push(
+        makeStructureEdge(
+          `e-structure-response-${spec.kind}`,
+          "structure-response",
+          `structure-${spec.kind}`,
+          spec.kind,
+        ),
+      );
+    }
   }
 
   return { nodes, edges };

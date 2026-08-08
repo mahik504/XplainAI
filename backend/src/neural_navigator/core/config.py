@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # --- Runtime -----------------------------------------------------------
     app_env: Environment = Environment.LOCAL
     project_name: str = "XplainAI"
-    version: str = "1.0.0"
+    version: str = "2.1.0"
     log_level: str = "INFO"
     log_format: LogFormat = LogFormat.CONSOLE
 
@@ -81,6 +81,12 @@ class Settings(BaseSettings):
     langgraph_checkpoint_backend: str = "memory"
     agent_max_steps: int = Field(default=32, ge=1)
     agent_step_timeout_seconds: float = Field(default=120.0, gt=0)
+    conversation_db_path: str = ".data/conversations.db"
+    default_run_mode: str = "balanced"
+
+    # Optional research tool keys (never hardcode; unset = tool skipped)
+    newsdata_api_key: SecretStr | None = None
+    openweather_api_key: SecretStr | None = None
 
     # --- WebSocket ---------------------------------------------------------
     ws_heartbeat_interval_seconds: float = Field(default=20.0, gt=0)
@@ -108,7 +114,13 @@ class Settings(BaseSettings):
             raise ValueError("api_root_path must start with '/'")
         return stripped
 
-    @field_validator("openai_api_key", "anthropic_api_key", mode="before")
+    @field_validator(
+        "openai_api_key",
+        "anthropic_api_key",
+        "newsdata_api_key",
+        "openweather_api_key",
+        mode="before",
+    )
     @classmethod
     def _blank_secret_to_none(cls, value: Any) -> Any:
         if value is None:

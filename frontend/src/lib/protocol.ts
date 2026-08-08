@@ -43,6 +43,22 @@ export interface RunFinishedFrame extends WSFrameBase {
   run_id: string;
   finish_reason: FinishReason;
   usage?: Usage | null;
+  mode?: string | null;
+  orchestration?: Record<string, unknown> | null;
+}
+
+export interface StageStartedFrame extends WSFrameBase {
+  type: "stage.started";
+  run_id: string;
+  stage: string;
+  detail?: Record<string, unknown> | null;
+}
+
+export interface StageCompleteFrame extends WSFrameBase {
+  type: "stage.complete";
+  run_id: string;
+  stage: string;
+  result?: Record<string, unknown> | null;
 }
 
 export interface HeartbeatFrame extends WSFrameBase {
@@ -65,6 +81,8 @@ export type ServerFrame =
   | RunStartedFrame
   | RunTokenFrame
   | RunFinishedFrame
+  | StageStartedFrame
+  | StageCompleteFrame
   | HeartbeatFrame
   | PongFrame
   | ErrorFrame;
@@ -75,6 +93,8 @@ export interface ChatSendClientFrame {
   model?: string | null;
   temperature?: number | null;
   max_output_tokens?: number | null;
+  mode?: string | null;
+  conversation_id?: string | null;
 }
 
 export interface RunCancelClientFrame {
@@ -96,6 +116,8 @@ export function isServerFrame(value: unknown): value is ServerFrame {
     type === "run.started" ||
     type === "run.token" ||
     type === "run.finished" ||
+    type === "stage.started" ||
+    type === "stage.complete" ||
     type === "heartbeat" ||
     type === "pong" ||
     type === "error"

@@ -164,14 +164,17 @@ function ClaimFocusInspectorBody({
   assertionId: string;
 }) {
   const responseAnalysis = useSessionStore((state) => state.responseAnalysis);
+  const sourcesRetrieved = useSessionStore((state) => state.sourcesRetrieved);
   const resolved = useMemo(() => {
     if (!responseAnalysis) return null;
     return resolveClaimFocus(responseAnalysis, assertionId);
   }, [assertionId, responseAnalysis]);
   const metrics = useMemo(() => {
     if (!responseAnalysis) return null;
-    return buildClaimFocusMetrics(responseAnalysis, assertionId);
-  }, [assertionId, responseAnalysis]);
+    return buildClaimFocusMetrics(responseAnalysis, assertionId, {
+      retrievedSourcesCount: sourcesRetrieved,
+    });
+  }, [assertionId, responseAnalysis, sourcesRetrieved]);
 
   const [open, setOpen] = useState({
     assertion: true,
@@ -196,7 +199,7 @@ function ClaimFocusInspectorBody({
       >
         <p className="text-foreground/90">{resolved.assertion.text}</p>
         <p className="mt-2 font-mono text-[11px] text-muted-foreground">
-          Detection confidence · {String(Math.round(metrics.detectionConfidence * 100))}%
+          Structure match · {String(Math.round(metrics.detectionConfidence * 100))}%
         </p>
       </InspectorSection>
 

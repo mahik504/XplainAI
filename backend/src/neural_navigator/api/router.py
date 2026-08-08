@@ -17,7 +17,7 @@ import time
 from fastapi import APIRouter, Response, status
 from starlette.requests import Request
 
-from neural_navigator.api import chat, websocket
+from neural_navigator.api import chat, conversations, websocket
 from neural_navigator.core.dependencies import SettingsDep
 from neural_navigator.schemas.base import HealthResponse
 from neural_navigator.utils.constants import SERVICE_NAME
@@ -79,6 +79,7 @@ async def readiness(
 
 api_router = APIRouter()
 api_router.include_router(chat.router)
+api_router.include_router(conversations.router)
 
 ws_router = APIRouter()
 ws_router.include_router(websocket.router)

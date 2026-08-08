@@ -85,21 +85,30 @@ export interface ClaimFocusMetrics {
   uncertaintyCount: number;
   supportLevel: number;
   detectionConfidence: number;
+  /** External retrieved sources for the run (not response evidence markers). */
+  retrievedSourcesCount: number;
+  uncertaintyLabel: "None" | "Detected" | "Elevated";
 }
 
 export function buildClaimFocusMetrics(
   analysis: ResponseStructureAnalysis,
   assertionId: string,
+  options?: { retrievedSourcesCount?: number },
 ): ClaimFocusMetrics | null {
   const resolved = resolveClaimFocus(analysis, assertionId);
   if (!resolved) return null;
+  const uncertaintyCount = resolved.nearbyUncertainty.length;
+  const uncertaintyLabel =
+    uncertaintyCount === 0 ? "None" : uncertaintyCount === 1 ? "Detected" : "Elevated";
   return {
     assertionText: resolved.assertion.text,
     evidenceMarkerCount: resolved.evidence.length,
     linkedEvidence: resolved.evidence.map((sentence) => sentence.text),
-    uncertaintyCount: resolved.nearbyUncertainty.length,
+    uncertaintyCount,
     supportLevel: resolved.supportLevel,
     detectionConfidence: resolved.assertion.confidence,
+    retrievedSourcesCount: options?.retrievedSourcesCount ?? 0,
+    uncertaintyLabel,
   };
 }
 

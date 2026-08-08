@@ -1,59 +1,19 @@
-import { motion } from "framer-motion";
 import { Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
+import { ModelSelector } from "@/components/brand/ModelSelector";
+import { XplainAiLogo } from "@/components/brand/XplainAiLogo";
 import { Button } from "@/components/ui/button";
+import { getRunModeMeta } from "@/lib/run-mode";
 import { cn } from "@/lib/utils";
+import { useConversationStore } from "@/stores/conversation-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useUIStore } from "@/stores/ui-store";
 
 export type ConnectionState = "offline" | "connecting" | "live";
 
 interface TopNavProps {
-  title?: string;
   connection?: ConnectionState;
-}
-
-function HudCell({
-  label,
-  value,
-  tone = "default",
-  live,
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "live" | "warn" | "good";
-  live?: boolean;
-}) {
-  return (
-    <motion.div
-      layout
-      className="hud-chip group relative min-w-[4.75rem] px-3.5 py-2 transition-colors duration-300 hover:bg-white/[0.04]"
-      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <p className="text-[10px] tracking-[0.16em] text-muted-foreground uppercase">{label}</p>
-      <p
-        className={cn(
-          "mt-0.5 truncate font-mono text-xs font-medium tabular-nums transition-colors duration-300",
-          tone === "default" && "text-foreground/90",
-          tone === "live" && "text-neon-emerald",
-          tone === "warn" && "text-neon-amber",
-          tone === "good" && "text-neon-cyan",
-        )}
-      >
-        {live ? (
-          <span className="mr-1.5 inline-block size-1.5 translate-y-[-1px] rounded-full bg-neon-emerald shadow-[0_0_10px_var(--neon-emerald)]" />
-        ) : null}
-        <motion.span
-          key={value}
-          initial={{ opacity: 0.35, y: 3 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {value}
-        </motion.span>
-      </p>
-    </motion.div>
-  );
 }
 
 function formatLatency(ms: number | null): string {
@@ -62,98 +22,206 @@ function formatLatency(ms: number | null): string {
   return `${(ms / 1000).toFixed(2)} s`;
 }
 
-export function TopNav({ title = "Explainability OS", connection = "offline" }: TopNavProps) {
+export function TopNav({ connection = "offline" }: TopNavProps) {
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const brandRef = useRef<HTMLDivElement>(null);
+  const detailsRef = useRef<HTMLDivElement>(null);
+
   const setMobileNavOpen = useUIStore((state) => state.setMobileNavOpen);
   const setSettingsOpen = useUIStore((state) => state.setSettingsOpen);
 
   const activeModel = useSessionStore((state) => state.activeModel);
   const defaultModel = useSessionStore((state) => state.defaultModel);
-  const trustScore = useSessionStore((state) => state.trustScore);
   const firstTokenLatencyMs = useSessionStore((state) => state.firstTokenLatencyMs);
   const totalLatencyMs = useSessionStore((state) => state.totalLatencyMs);
   const tokenUsage = useSessionStore((state) => state.tokenUsage);
   const isStreaming = useSessionStore((state) => state.isStreaming);
   const storeConnection = useSessionStore((state) => state.connection);
   const providerName = useSessionStore((state) => state.providerName);
+  const runMode = useSessionStore((state) => state.runMode);
+  const phase = useSessionStore((state) => state.phase);
+
+  const conversations = useConversationStore((state) => state.conversations);
+  const activeConversationId = useConversationStore((state) => state.activeConversationId);
+  const newChat = useConversationStore((state) => state.newChat);
 
   const link = connection === "offline" ? storeConnection : connection;
   const latency = firstTokenLatencyMs ?? totalLatencyMs;
-  const model = activeModel ?? defaultModel ?? "—";
-  const tokens = tokenUsage !== null ? String(tokenUsage.total_tokens) : "—";
+  const modeMeta = getRunModeMeta(runMode);
+  const conversationTitle =
+    conversations.find((item) => item.id === activeConversationId)?.title ?? "New conversation";
+  const hasRunMetrics =
+    totalLatencyMs != null || firstTokenLatencyMs != null || tokenUsage != null;
+  const showRunChip =
+    isStreaming ||
+    (hasRunMetrics &&
+      (phase === "finished" || phase === "failed" || phase === "cancelled"));
+
+  useEffect(() => {
+    if (!brandOpen && !detailsOpen) return;
+    const onPointer = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (brandOpen && !brandRef.current?.contains(target)) setBrandOpen(false);
+      if (detailsOpen && !detailsRef.current?.contains(target)) setDetailsOpen(false);
+    };
+    window.addEventListener("mousedown", onPointer);
+    return () => {
+      window.removeEventListener("mousedown", onPointer);
+    };
+  }, [brandOpen, detailsOpen]);
 
   return (
-    <header className="relative z-20 shrink-0 px-3 pt-3 sm:px-4 sm:pt-3.5">
-      <div className="hud-island flex min-h-14 items-center gap-2 rounded-2xl border border-white/10 bg-black/30 px-2.5 py-1.5 shadow-[0_18px_50px_-28px_oklch(0_0_0_/_80%),inset_0_1px_0_0_oklch(1_0_0_/_8%)] backdrop-blur-2xl sm:px-3">
+    <header className="relative z-30 shrink-0 border-b border-border/40 bg-[#0A0A0F]/70 px-3 py-2.5 backdrop-blur-xl sm:px-4">
+      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon-sm"
-          className="lg:hidden"
+          className="xl:hidden"
           onClick={() => {
             setMobileNavOpen(true);
           }}
         >
-          <span className="sr-only">Open navigation</span>
+          <span className="sr-only">Open history</span>
           <span className="block size-3.5 rounded-[2px] border border-foreground/70" />
         </Button>
 
-        <div className="hidden min-w-0 pl-1 sm:block">
-          <p className="truncate text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
-            XplainAI
-          </p>
-          <h1 className="truncate text-sm font-medium text-foreground">{title}</h1>
-        </div>
-
-        <div className="hud-strip ml-auto flex min-w-0 flex-1 items-stretch justify-end overflow-x-auto sm:ml-4">
-          <div className="hud-panel flex items-stretch divide-x divide-white/[0.06] overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] shadow-[inset_0_1px_0_0_oklch(1_0_0_/_6%)] backdrop-blur-xl">
-            <div aria-live="polite" className="sr-only">
-              Connection {link}
-              {isStreaming ? ", streaming" : ""}
-            </div>
-            <HudCell
-              label="LIVE"
-              value={link === "live" ? (isStreaming ? "STREAMING" : "ONLINE") : link.toUpperCase()}
-              tone={link === "live" ? "live" : link === "connecting" ? "warn" : "default"}
-              live={link === "live"}
-            />
-            <HudCell label="Model" value={model} tone="good" />
-            <HudCell label="Latency" value={formatLatency(latency)} />
-            <HudCell
-              label="Structure"
-              value={trustScore === null ? "—" : `${String(Math.round(trustScore * 100))}%`}
-              tone={
-                trustScore !== null && trustScore >= 0.75
-                  ? "live"
-                  : trustScore !== null && trustScore < 0.45
-                    ? "warn"
-                    : "default"
-              }
-            />
-            <HudCell label="Tokens" value={tokens} />
-            <HudCell
-              label="Connection"
-              value={
+        <div ref={brandRef} className="relative">
+          <button
+            type="button"
+            className="group flex items-center gap-2.5 rounded-xl px-1.5 py-1 transition hover:bg-white/[0.04]"
+            onClick={() => {
+              setBrandOpen((value) => !value);
+            }}
+            aria-haspopup="menu"
+            aria-expanded={brandOpen}
+          >
+            <XplainAiLogo size={28} className="group-hover:drop-shadow-[0_0_10px_oklch(0.72_0.15_220_/_45%)]" />
+            <span className="text-left">
+              <span className="block font-display text-[15px] font-semibold tracking-tight text-foreground">
+                XplainAI
+              </span>
+              <span className="hidden text-[11px] text-muted-foreground sm:block">
+                Explainable AI workspace
+              </span>
+            </span>
+            <span
+              className={cn(
+                "ml-1 size-1.5 rounded-full",
                 link === "live"
-                  ? providerName
-                    ? `WS · ${providerName}`
-                    : "WS READY"
-                  : link.toUpperCase()
-              }
-              tone={link === "live" ? "good" : "warn"}
+                  ? "bg-neon-emerald shadow-[0_0_8px_var(--neon-emerald)]"
+                  : link === "connecting"
+                    ? "bg-neon-amber"
+                    : "bg-muted-foreground/50",
+              )}
+              title={link}
             />
-          </div>
+          </button>
+
+          {brandOpen ? (
+            <div
+              role="menu"
+              className="absolute top-full left-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border/60 bg-[#12121A]/96 py-1 shadow-[0_20px_48px_-28px_oklch(0_0_0_/_80%)] backdrop-blur-xl"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-white/[0.05]"
+                onClick={() => {
+                  setBrandOpen(false);
+                  void newChat();
+                }}
+              >
+                New chat
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-white/[0.05]"
+                onClick={() => {
+                  setBrandOpen(false);
+                  setSettingsOpen(true);
+                }}
+              >
+                Settings
+              </button>
+              <p className="border-t border-border/40 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+                Observable structure — not hidden chain-of-thought or factual verification.
+              </p>
+            </div>
+          ) : null}
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="shrink-0 transition-transform duration-300 hover:scale-105"
-          onClick={() => {
-            setSettingsOpen(true);
-          }}
-        >
-          <Settings className="size-4" />
-          <span className="sr-only">Open settings</span>
-        </Button>
+        <div className="mx-auto hidden min-w-0 max-w-md flex-1 text-center md:block">
+          <p className="truncate text-sm font-medium text-foreground/90">{conversationTitle}</p>
+          <p className="truncate text-[11px] text-muted-foreground">{modeMeta.label}</p>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          {showRunChip ? (
+            <div ref={detailsRef} className="relative hidden sm:block">
+              <button
+                type="button"
+                className="rounded-full border border-border/50 bg-white/[0.03] px-2.5 py-1 text-[11px] text-muted-foreground transition hover:text-foreground"
+                onClick={() => {
+                  setDetailsOpen((value) => !value);
+                }}
+              >
+                {isStreaming
+                  ? `Streaming · ${formatLatency(latency)}`
+                  : `${formatLatency(totalLatencyMs ?? latency)} · ${tokenUsage ? String(tokenUsage.total_tokens) : "—"} tok`}
+              </button>
+              {detailsOpen ? (
+                <div className="absolute top-full right-0 z-50 mt-2 w-56 rounded-xl border border-border/60 bg-[#12121A]/96 p-3 text-xs shadow-xl backdrop-blur-xl">
+                  <dl className="space-y-1.5 text-muted-foreground">
+                    <div className="flex justify-between gap-3">
+                      <dt>Model</dt>
+                      <dd className="text-foreground">{activeModel ?? defaultModel ?? "—"}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>Latency</dt>
+                      <dd className="text-foreground">{formatLatency(totalLatencyMs ?? latency)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>Tokens</dt>
+                      <dd className="text-foreground">
+                        {tokenUsage ? String(tokenUsage.total_tokens) : "—"}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>Mode</dt>
+                      <dd className="text-foreground">{modeMeta.label}</dd>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <dt>Connection</dt>
+                      <dd className="text-foreground">
+                        {link === "live"
+                          ? providerName
+                            ? `WS · ${providerName}`
+                            : "WS"
+                          : link}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <ModelSelector />
+
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="shrink-0"
+            onClick={() => {
+              setSettingsOpen(true);
+            }}
+          >
+            <Settings className="size-4" />
+            <span className="sr-only">Open settings</span>
+          </Button>
+        </div>
       </div>
     </header>
   );

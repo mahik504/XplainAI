@@ -1,6 +1,6 @@
 [project]
 name = "neural-navigator"
-version = "1.0.0"
+version = "2.1.0"
 description = "FastAPI backend for XplainAI — streaming chat, WebSocket runs, OpenAI provider."
 requires-python = ">=3.12"
 dependencies = [

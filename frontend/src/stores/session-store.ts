@@ -5,6 +5,7 @@ import type { ConnectionState } from "@/app/layouts/TopNav";
 import type { ConversationMessage } from "@/features/conversation";
 import type { TimelineEvent, TimelineStatus } from "@/features/timeline";
 import type { TrustPoint, TrustSignal } from "@/features/trust";
+import type { RunMode } from "@/lib/run-mode";
 import { buildRunGraph, type RunPhase } from "@/lib/run-graph";
 import type {
   ChatWireMessage,
@@ -12,11 +13,21 @@ import type {
   ServerFrame,
   Usage,
 } from "@/lib/protocol";
+import type { ChatModelInfo } from "@/lib/api";
+import { sourcesFromOrchestration, type RetrievedSource } from "@/lib/sources";
+import { buildStageGraph, type StageEvent } from "@/lib/stage-graph";
 import type { WsClient } from "@/lib/ws-client";
 import {
   analyzeResponse,
   type ResponseStructureAnalysis,
 } from "@/lib/xai";
+import { useUIStore } from "@/stores/ui-store";
+
+export interface MissingContextItem {
+  item: string;
+  importance: string;
+  why_it_matters: string;
+}
 
 function nowStamp(): string {
   return new Date().toLocaleTimeString([], {
@@ -128,6 +139,7 @@ interface SessionState {
   connection: ConnectionState;
   providerName: string | null;
   defaultModel: string | null;
+  availableModels: ChatModelInfo[];
   messages: ConversationMessage[];
   isStreaming: boolean;
   activeRunId: string | null;
@@ -148,14 +160,32 @@ interface SessionState {
   trustHistory: TrustPoint[];
   /** Structural analysis of the latest finished assistant response (not CoT). */
   responseAnalysis: ResponseStructureAnalysis | null;
+  runMode: RunMode;
+  stageEvents: StageEvent[];
+  orchestration: Record<string, unknown> | null;
+  sourcesRetrieved: number;
+  retrievedSources: RetrievedSource[];
+  missingContext: MissingContextItem[];
+  counterPerspective: string | null;
+  stageTimings: { stage: string; duration_ms: number }[];
+  ignoredRunIds: string[];
   lastError: string | null;
   lastErrorCode: string | null;
   bindClient: (client: WsClient | null) => void;
   setConnection: (connection: ConnectionState) => void;
   setSelectedNodeId: (nodeId: string | null) => void;
-  setModelCatalog: (input: { provider: string; defaultModel: string }) => void;
+  setModelCatalog: (input: {
+    provider: string;
+    defaultModel: string;
+    models?: ChatModelInfo[];
+  }) => void;
+  setActiveModel: (modelId: string) => void;
+  setRunMode: (mode: RunMode) => void;
   applyFrame: (frame: ServerFrame) => void;
-  sendMessage: (text: string) => boolean;
+  sendMessage: (text: string, options?: { conversationId?: string | null }) => boolean;
+  retryLast: (options?: { conversationId?: string | null }) => boolean;
+  resetConversation: () => void;
+  loadConversationMessages: (messages: ConversationMessage[]) => void;
   stop: () => void;
 }
 
@@ -195,6 +225,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
   connection: "offline",
   providerName: null,
   defaultModel: null,
+  availableModels: [],
   messages: [],
   isStreaming: false,
   activeRunId: null,
@@ -214,11 +245,91 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
   trustSignals: [],
   trustHistory: [],
   responseAnalysis: null,
+  runMode: "balanced",
+  stageEvents: [],
+  orchestration: null,
+  sourcesRetrieved: 0,
+  retrievedSources: [],
+  missingContext: [],
+  counterPerspective: null,
+  stageTimings: [],
+  ignoredRunIds: [],
   lastError: null,
   lastErrorCode: null,
 
   bindClient: (client) => {
     clientRef = client;
+  },
+
+  setRunMode: (mode) => {
+    set({ runMode: mode });
+  },
+
+  resetConversation: () => {
+    set({
+      messages: [],
+      isStreaming: false,
+      activeRunId: null,
+      streamedChars: 0,
+      phase: "idle",
+      runStartedAtMs: null,
+      firstTokenLatencyMs: null,
+      totalLatencyMs: null,
+      tokenUsage: null,
+      finishReason: null,
+      selectedNodeId: null,
+      graphNodes: [],
+      graphEdges: [],
+      timeline: [],
+      responseAnalysis: null,
+      stageEvents: [],
+      orchestration: null,
+      sourcesRetrieved: 0,
+      retrievedSources: [],
+      missingContext: [],
+      counterPerspective: null,
+      stageTimings: [],
+      ignoredRunIds: [],
+      lastError: null,
+      lastErrorCode: null,
+    });
+  },
+
+  loadConversationMessages: (messages) => {
+    const lastAssistant = [...messages].reverse().find((message) => message.role === "assistant");
+    const responseAnalysis =
+      lastAssistant && lastAssistant.content.trim()
+        ? analyzeResponse(lastAssistant.content)
+        : null;
+    set({
+      messages,
+      isStreaming: false,
+      activeRunId: null,
+      streamedChars: 0,
+      phase: lastAssistant ? "finished" : "idle",
+      runStartedAtMs: null,
+      firstTokenLatencyMs: null,
+      totalLatencyMs: null,
+      tokenUsage: null,
+      finishReason: null,
+      responseAnalysis,
+      stageEvents: [],
+      orchestration: null,
+      sourcesRetrieved: 0,
+      retrievedSources: [],
+      missingContext: [],
+      counterPerspective: null,
+      stageTimings: [],
+      selectedNodeId: null,
+      graphNodes: [],
+      graphEdges: [],
+      timeline: [],
+      trustScore: null,
+      trustSignals: [],
+      ignoredRunIds: [],
+      lastError: null,
+      lastErrorCode: null,
+    });
   },
 
   setConnection: (connection) => {
@@ -248,15 +359,46 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
     set({ selectedNodeId: nodeId });
   },
 
-  setModelCatalog: ({ provider, defaultModel }) => {
+  setModelCatalog: ({ provider, defaultModel, models = [] }) => {
+    const current = get().activeModel;
+    const allowed = new Set(models.map((model) => model.id));
+    const nextActive =
+      current && (allowed.size === 0 || allowed.has(current))
+        ? current
+        : defaultModel;
     set({
       providerName: provider,
       defaultModel,
-      activeModel: get().activeModel ?? defaultModel,
+      availableModels: models,
+      activeModel: nextActive,
     });
   },
 
+  setActiveModel: (modelId) => {
+    const allowed = get().availableModels;
+    if (allowed.length > 0 && !allowed.some((model) => model.id === modelId)) {
+      return;
+    }
+    set({ activeModel: modelId });
+  },
+
   applyFrame: (frame) => {
+    const runId =
+      "run_id" in frame && typeof frame.run_id === "string" ? frame.run_id : null;
+    if (
+      runId &&
+      frame.type !== "run.started" &&
+      (get().ignoredRunIds.includes(runId) ||
+        (get().activeRunId !== null &&
+          runId !== get().activeRunId &&
+          (frame.type === "run.token" ||
+            frame.type === "stage.started" ||
+            frame.type === "stage.complete" ||
+            frame.type === "run.finished")))
+    ) {
+      return;
+    }
+
     switch (frame.type) {
       case "connection.ready": {
         const trust = buildTrustProjection({ connection: "live", finishReason: null,
@@ -299,6 +441,13 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
           tokenUsage: null,
           finishReason: null,
           responseAnalysis: null,
+          stageEvents: [],
+          orchestration: null,
+          sourcesRetrieved: 0,
+          retrievedSources: [],
+          missingContext: [],
+          counterPerspective: null,
+          stageTimings: [],
           selectedNodeId: "model",
           lastError: null,
           lastErrorCode: null,
@@ -466,6 +615,38 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
           analysis: responseAnalysis,
         });
 
+        const orchestration =
+          frame.orchestration && typeof frame.orchestration === "object"
+            ? frame.orchestration
+            : null;
+        const retrievedSources = sourcesFromOrchestration(orchestration);
+        const missingRaw = orchestration?.missing_context;
+        const missingContext: MissingContextItem[] = Array.isArray(missingRaw)
+          ? missingRaw.filter(
+              (item): item is MissingContextItem =>
+                typeof item === "object" &&
+                item !== null &&
+                typeof (item as MissingContextItem).item === "string" &&
+                typeof (item as MissingContextItem).why_it_matters === "string",
+            )
+          : [];
+        const counter =
+          typeof orchestration?.counter_perspective === "string"
+            ? orchestration.counter_perspective
+            : null;
+        const timingsRaw = orchestration?.stage_timings;
+        const stageTimings = Array.isArray(timingsRaw)
+          ? timingsRaw
+              .map((row) => {
+                if (typeof row !== "object" || row === null) return null;
+                const stage = (row as { stage?: unknown }).stage;
+                const duration = (row as { duration_ms?: unknown }).duration_ms;
+                if (typeof stage !== "string" || typeof duration !== "number") return null;
+                return { stage, duration_ms: duration };
+              })
+              .filter((row): row is { stage: string; duration_ms: number } => row !== null)
+          : [];
+
         set({
           messages,
           isStreaming: false,
@@ -475,6 +656,12 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
           tokenUsage: usage,
           finishReason: frame.finish_reason,
           responseAnalysis,
+          orchestration,
+          retrievedSources,
+          sourcesRetrieved: retrievedSources.length,
+          missingContext,
+          counterPerspective: counter,
+          stageTimings,
           selectedNodeId: phase === "failed" || phase === "cancelled" ? "stream" : "output",
           graphNodes: graph.nodes,
           graphEdges: graph.edges,
@@ -485,6 +672,10 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
             trust.score !== null
               ? pushHistory(state.trustHistory, trust.score)
               : state.trustHistory,
+          ignoredRunIds:
+            frame.finish_reason === "cancelled"
+              ? [...state.ignoredRunIds, frame.run_id].slice(-12)
+              : state.ignoredRunIds,
         });
         return;
       }
@@ -523,12 +714,79 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
         return;
       }
 
+      case "stage.started": {
+        const state = get();
+        if (state.activeRunId !== null && frame.run_id !== state.activeRunId) return;
+        const stageEvents: StageEvent[] = [
+          ...state.stageEvents,
+          {
+            stage: frame.stage,
+            status: "started",
+            detail: frame.detail ?? null,
+            at: performance.now(),
+          },
+        ];
+        const stageGraph = buildStageGraph(stageEvents, {
+          isStreaming: true,
+          mode: state.runMode,
+        });
+        set({
+          stageEvents,
+          graphNodes: stageGraph.nodes.length > 0 ? stageGraph.nodes : state.graphNodes,
+          graphEdges: stageGraph.edges.length > 0 ? stageGraph.edges : state.graphEdges,
+          timeline: appendTimeline(state.timeline, {
+            label: `Stage · ${frame.stage}`,
+            detail: "started",
+            status: "active",
+          }),
+        });
+        return;
+      }
+
+      case "stage.complete": {
+        const state = get();
+        if (state.activeRunId !== null && frame.run_id !== state.activeRunId) return;
+        const stageEvents: StageEvent[] = [
+          ...state.stageEvents,
+          {
+            stage: frame.stage,
+            status: "complete",
+            detail: frame.result ?? null,
+            at: performance.now(),
+          },
+        ];
+        const sources =
+          frame.stage === "completed" && frame.result && typeof frame.result.sources_retrieved === "number"
+            ? frame.result.sources_retrieved
+            : state.sourcesRetrieved;
+        const stageGraph = buildStageGraph(stageEvents, {
+          isStreaming: state.isStreaming,
+          mode: state.runMode,
+        });
+        set({
+          stageEvents,
+          sourcesRetrieved: typeof sources === "number" ? sources : state.sourcesRetrieved,
+          orchestration:
+            frame.stage === "completed" && frame.result
+              ? frame.result
+              : state.orchestration,
+          graphNodes: stageGraph.nodes.length > 0 ? stageGraph.nodes : state.graphNodes,
+          graphEdges: stageGraph.edges.length > 0 ? stageGraph.edges : state.graphEdges,
+          timeline: markTimeline(
+            state.timeline,
+            (event) => event.label === `Stage · ${frame.stage}` && event.status === "active",
+            "complete",
+          ),
+        });
+        return;
+      }
+
       default:
         return;
     }
   },
 
-  sendMessage: (text) => {
+  sendMessage: (text, options) => {
     const content = text.trim();
     if (!content) return false;
 
@@ -548,11 +806,14 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
     const messages = [...get().messages, userMessage];
     const wire = toWireMessages(messages);
     const model = get().activeModel ?? get().defaultModel;
+    const mode = get().runMode;
 
     const sent = client.send({
       type: "chat.send",
       messages: wire,
+      mode,
       ...(model ? { model } : {}),
+      ...(options?.conversationId ? { conversation_id: options.conversationId } : {}),
     });
 
     if (!sent) {
@@ -560,14 +821,32 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
       return false;
     }
 
+    const previousRunId = get().activeRunId;
+    if (previousRunId) {
+      client.send({ type: "run.cancel", run_id: previousRunId });
+    }
+    // New run clears claim/evidence UI; WorkspacePage also exits focus on stream start.
+    useUIStore.getState().exitClaimFocus();
+    useUIStore.getState().setEvidenceDemandHighlight(false);
     set({
       messages,
       lastError: null,
       lastErrorCode: null,
       selectedNodeId: "input",
+      stageEvents: [],
+      responseAnalysis: null,
+      orchestration: null,
+      retrievedSources: [],
+      missingContext: [],
+      counterPerspective: null,
+      stageTimings: [],
+      sourcesRetrieved: 0,
+      ignoredRunIds: previousRunId
+        ? [...get().ignoredRunIds, previousRunId].slice(-12)
+        : get().ignoredRunIds,
       timeline: appendTimeline(get().timeline, {
         label: "User message",
-        detail: content.length > 64 ? `${content.slice(0, 64)}â€¦` : content,
+        detail: content.length > 64 ? `${content.slice(0, 64)}…` : content,
         status: "complete",
       }),
     });
@@ -575,11 +854,26 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
     return true;
   },
 
+  retryLast: (options) => {
+    const messages = get().messages;
+    const lastUser = [...messages].reverse().find((message) => message.role === "user");
+    if (!lastUser) return false;
+    // Drop trailing incomplete/failed assistant turn before retry.
+    let trimmed = [...messages];
+    while (trimmed.length > 0 && trimmed[trimmed.length - 1]?.role === "assistant") {
+      trimmed = trimmed.slice(0, -1);
+    }
+    set({ messages: trimmed.slice(0, -1) });
+    return get().sendMessage(lastUser.content, options);
+  },
+
   stop: () => {
     const client = clientRef;
     const runId = get().activeRunId;
     if (!client) return;
 
+    // Do not ignore this run_id yet — the matching run.finished (cancelled)
+    // must still update UI. Stale ignore happens when a newer prompt starts.
     client.send({
       type: "run.cancel",
       run_id: runId,

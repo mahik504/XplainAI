@@ -2,7 +2,7 @@ import type { Edge, Node } from "@xyflow/react";
 
 export type RunPhase = "idle" | "started" | "streaming" | "finished" | "failed" | "cancelled";
 
-export type RunNodeTone = "pending" | "active" | "complete" | "failed";
+export type RunNodeTone = "pending" | "active" | "complete" | "failed" | "skipped";
 
 function toneFor(phase: RunPhase, id: "input" | "model" | "stream" | "output"): RunNodeTone {
   if (phase === "idle") return "pending";
