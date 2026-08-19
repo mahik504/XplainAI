@@ -51,11 +51,19 @@ interface UIState {
   evidenceDemandHighlight: boolean;
   composerPrefill: string | null;
   showcaseRunId: number;
-  /** User dismissed Demo Mode landing to use the composer freely */
   demoLandingDismissed: boolean;
+  inspectorOpen: boolean;
+  saveHistoryEnabled: boolean;
+  customApiKey: string;
+  customApiBase: string;
+  customModelId: string;
   setActivePanel: (panel: WorkspacePanel) => void;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  toggleInspector: () => void;
+  setInspectorOpen: (open: boolean) => void;
+  setSaveHistoryEnabled: (enabled: boolean) => void;
+  setCustomApiConfig: (config: { apiKey?: string; apiBase?: string; modelId?: string }) => void;
   setMobileNavOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setAmbientMotion: (enabled: boolean) => void;
@@ -104,6 +112,11 @@ export const useUIStore = create<UIState>()((set) => ({
   evidenceDemandHighlight: false,
   composerPrefill: null,
   showcaseRunId: 0,
+  inspectorOpen: false,
+  saveHistoryEnabled: true,
+  customApiKey: "",
+  customApiBase: "",
+  customModelId: "",
   demoLandingDismissed: readDemoLandingDismissed(),
   setActivePanel: (panel) => {
     set({ activePanel: panel, mobileNavOpen: false });
@@ -113,6 +126,22 @@ export const useUIStore = create<UIState>()((set) => ({
   },
   setSidebarCollapsed: (collapsed) => {
     set({ sidebarCollapsed: collapsed });
+  },
+  toggleInspector: () => {
+    set((state) => ({ inspectorOpen: !state.inspectorOpen }));
+  },
+  setInspectorOpen: (open) => {
+    set({ inspectorOpen: open });
+  },
+  setSaveHistoryEnabled: (enabled) => {
+    set({ saveHistoryEnabled: enabled });
+  },
+  setCustomApiConfig: (config) => {
+    set((state) => ({
+      customApiKey: config.apiKey ?? state.customApiKey,
+      customApiBase: config.apiBase ?? state.customApiBase,
+      customModelId: config.modelId ?? state.customModelId,
+    }));
   },
   setMobileNavOpen: (open) => {
     set({ mobileNavOpen: open });

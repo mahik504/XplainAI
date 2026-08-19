@@ -4,9 +4,9 @@ import type { ResponseStructureAnalysis } from "@/lib/xai";
 import { cn } from "@/lib/utils";
 
 const SEGMENTS = [
-  { key: "claimCount", label: "Claims", bar: "bg-rose-500", text: "text-rose-400" },
+  { key: "claimCount", label: "Claims", bar: "bg-blue-500", text: "text-blue-400" },
   { key: "evidenceCount", label: "Evidence", bar: "bg-emerald-400", text: "text-emerald-400" },
-  { key: "reasoningCount", label: "Reasoning", bar: "bg-indigo-400", text: "text-indigo-400" },
+  { key: "reasoningCount", label: "Reasoning", bar: "bg-violet-400", text: "text-violet-400" },
   { key: "hedgeCount", label: "Hedge", bar: "bg-amber-300", text: "text-amber-300" },
   { key: "exampleCount", label: "Example", bar: "bg-orange-400", text: "text-orange-400" },
 ] as const;

@@ -6,7 +6,6 @@ import { ChatPanel } from "@/features/conversation";
 import { StoryGuide } from "@/features/demo";
 import { ExplainabilityPanel } from "@/features/explainability";
 import { HistorySidebar } from "@/features/history";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { useStoryOrchestration } from "@/hooks/use-story-orchestration";
 import {
   ASSERTION_NODE_ID,
@@ -23,10 +22,6 @@ import { useSessionStore } from "@/stores/session-store";
 import { useUIStore } from "@/stores/ui-store";
 
 export function WorkspacePage() {
-  const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const showHistoryRail = useMediaQuery("(min-width: 1360px)");
-  const activePanel = useUIStore((state) => state.activePanel);
-  const setActivePanel = useUIStore((state) => state.setActivePanel);
   const replayPhase = useUIStore((state) => state.replayPhase);
   const isReplaying = useUIStore((state) => state.isReplaying);
   const stopReplay = useUIStore((state) => state.stopReplay);
@@ -259,6 +254,9 @@ export function WorkspacePage() {
       ? `structure-${String(structureGraph?.nodes.length ?? 0)}-${structureGraph?.nodes.length === 0 ? "empty" : "ready"}`
       : `pipeline-${phase}-${String(graphNodes.length)}`;
 
+  const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
+  const inspectorOpen = useUIStore((state) => state.inspectorOpen);
+
   const sourcesEmptyHint =
     phase === "finished" &&
     (runMode === "balanced" || runMode === "deep_research") &&
@@ -292,7 +290,6 @@ export function WorkspacePage() {
   const chatPanel = (
     <ChatPanel
       active
-      floating
       className="size-full"
       messages={messages}
       isStreaming={isStreaming}
@@ -322,73 +319,40 @@ export function WorkspacePage() {
       />
     ) : null;
 
-  if (!isDesktop) {
-    return (
-      <div className="relative flex h-full min-h-0 flex-col gap-2">
-        <div className="flex shrink-0 gap-1 rounded-xl border border-zinc-800 bg-zinc-900/60 p-1">
-          {(
-            [
-              ["chat", "Studio"],
-              ["graph", "Cockpit"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                (id === "chat" && activePanel === "chat") ||
-                (id === "graph" && activePanel !== "chat")
-                  ? "bg-zinc-800 text-cyan-300 shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-              onClick={() => {
-                setActivePanel(id === "chat" ? "chat" : "graph");
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="relative min-h-0 flex-1">
-          {activePanel === "chat" ? (
-            <motion.div
-              key="chat"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="absolute inset-0"
-            >
-              {chatPanel}
-              {storyGuide}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="xai"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="absolute inset-0"
-            >
-              {explainability}
-            </motion.div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative flex h-full min-h-0 gap-3">
-      {showHistoryRail ? <HistorySidebar compact className="shrink-0" /> : null}
+    <div className="relative flex h-full min-h-0 w-full overflow-hidden bg-[#09090b]">
+      {/* Collapsible History Sidebar */}
+      {!sidebarCollapsed ? (
+        <motion.div
+          initial={{ width: 0, opacity: 0 }}
+          animate={{ width: 260, opacity: 1 }}
+          exit={{ width: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="h-full shrink-0 overflow-hidden"
+        >
+          <HistorySidebar className="h-full w-[260px]" />
+        </motion.div>
+      ) : null}
 
-      {/* Main Conversational Studio */}
-      <section className="relative min-h-0 min-w-0 flex-[1.25]">
+      {/* Main Spacious Conversational Canvas (Single-Column Focus) */}
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {chatPanel}
         {storyGuide}
-      </section>
+      </main>
 
-      {/* Research & Evidence Cockpit */}
-      <section className="relative min-h-0 w-[min(46%,600px)] shrink-0 xl:w-[min(48%,660px)] 2xl:w-[min(50%,740px)]">
-        {explainability}
-      </section>
+      {/* Slide-over Explainability Inspector Drawer */}
+      {inspectorOpen ? (
+        <motion.aside
+          initial={{ x: "100%", opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: "100%", opacity: 0 }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          className="relative z-20 h-full w-[440px] shrink-0 xl:w-[500px] 2xl:w-[560px]"
+        >
+          {explainability}
+        </motion.aside>
+      ) : null}
     </div>
   );
 }
+

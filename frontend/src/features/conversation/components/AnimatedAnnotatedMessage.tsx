@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { memo, useEffect, useMemo, useRef, type MouseEvent } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { MessageMarkdown } from "@/components/common/MessageMarkdown";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -19,42 +19,49 @@ import { ReasoningAnatomyBar } from "./ReasoningAnatomyBar";
 
 const CATEGORY_STYLE: Record<
   ResponseStructureCategory,
-  { border: string; bg: string; label: string }
+  { border: string; bg: string; label: string; text: string }
 > = {
   claim: {
-    border: "border-l-rose-500",
-    bg: "bg-rose-500/10",
+    border: "border-l-blue-500",
+    bg: "bg-blue-500/[0.04]",
     label: "Assertion",
+    text: "text-blue-400",
   },
   evidence: {
-    border: "border-l-emerald-400",
-    bg: "bg-emerald-400/10",
+    border: "border-l-emerald-500",
+    bg: "bg-emerald-500/[0.04]",
     label: "Empirical Evidence",
+    text: "text-emerald-400",
   },
   reasoning: {
-    border: "border-l-indigo-400",
-    bg: "bg-indigo-400/10",
+    border: "border-l-violet-500",
+    bg: "bg-violet-500/[0.04]",
     label: "Connector",
+    text: "text-violet-400",
   },
   example: {
-    border: "border-l-orange-400",
-    bg: "bg-orange-400/10",
+    border: "border-l-orange-500",
+    bg: "bg-orange-500/[0.04]",
     label: "Example",
+    text: "text-orange-400",
   },
   hedge: {
-    border: "border-l-amber-400",
-    bg: "bg-amber-400/10",
-    label: "Uncertainty",
+    border: "border-l-amber-500",
+    bg: "bg-amber-500/[0.04]",
+    label: "Uncertainty / Hedge",
+    text: "text-amber-400",
   },
   conclusion: {
-    border: "border-l-pink-400",
-    bg: "bg-pink-400/10",
+    border: "border-l-sky-500",
+    bg: "bg-sky-500/[0.04]",
     label: "Conclusion",
+    text: "text-sky-400",
   },
   neutral: {
     border: "border-l-zinc-700",
-    bg: "bg-white/[0.02]",
+    bg: "bg-white/[0.01]",
     label: "Neutral",
+    text: "text-zinc-400",
   },
 };
 
@@ -70,7 +77,6 @@ const StructureChip = memo(function StructureChip({
   sentence,
   index,
   analysis,
-  sourcesLinked = 0,
 }: {
   sentence: ClassifiedSentence;
   index: number;
@@ -89,6 +95,7 @@ const StructureChip = memo(function StructureChip({
   const enterClaimFocus = useUIStore((state) => state.enterClaimFocus);
   const setComposerPrefill = useUIStore((state) => state.setComposerPrefill);
   const setEvidenceDemandHighlight = useUIStore((state) => state.setEvidenceDemandHighlight);
+  const setInspectorOpen = useUIStore((state) => state.setInspectorOpen);
 
   useEffect(() => {
     if (!isFocusedAssertion && !isSpotlight) return;
@@ -100,6 +107,7 @@ const StructureChip = memo(function StructureChip({
     const resolved = resolveClaimFocus(analysis, id);
     if (!resolved) return;
     enterClaimFocus(id, resolved.evidenceIds);
+    setInspectorOpen(true);
   };
 
   const requestEvidence = (event: MouseEvent) => {
@@ -118,14 +126,14 @@ const StructureChip = memo(function StructureChip({
         <motion.div
           ref={chipRef}
           data-sentence-id={id}
-          initial={{ opacity: 0, y: 4 }}
+          initial={{ opacity: 0, y: 3 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.22, delay: Math.min(index * 0.03, 0.28) }}
+          transition={{ duration: 0.18, delay: Math.min(index * 0.02, 0.2) }}
           className={cn(
-            "flex w-full items-start gap-2 rounded-md border-l-2 px-2 py-1.5 text-left text-[12px] leading-snug transition",
+            "flex w-full items-start gap-2 rounded-r-md border-l-2 px-2.5 py-1.5 text-left text-xs leading-relaxed transition",
             style.border,
             style.bg,
-            (isFocusedAssertion || isSpotlight) && "ring-1 ring-neon-cyan/35",
+            (isFocusedAssertion || isSpotlight) && "bg-blue-500/[0.08] ring-1 ring-blue-500/30",
           )}
         >
           <button
@@ -134,11 +142,11 @@ const StructureChip = memo(function StructureChip({
             disabled={!isClaim}
             className={cn(
               "flex min-w-0 flex-1 items-start gap-2 text-left",
-              isClaim && "cursor-pointer hover:opacity-95",
+              isClaim && "cursor-pointer hover:opacity-100",
               !isClaim && "cursor-default",
             )}
           >
-            <span className="mt-0.5 shrink-0 text-[10px] tracking-wide text-muted-foreground uppercase">
+            <span className={cn("mt-0.5 shrink-0 text-[10px] font-medium uppercase", style.text)}>
               {style.label}
             </span>
             <span className="min-w-0 flex-1 text-foreground/90">{sentence.text}</span>
@@ -147,30 +155,27 @@ const StructureChip = memo(function StructureChip({
             <button
               type="button"
               aria-label="Ask for evidence"
-              title="Ask for evidence — prefills the composer; you still press Send"
+              title="Request verifiable evidence for this assertion"
               onClick={requestEvidence}
               className={cn(
-                "nn-evidence-demand inline-flex size-5 shrink-0 items-center justify-center rounded-full border font-semibold",
-                "border-neon-amber/55 bg-neon-amber/18 text-neon-amber",
-                evidenceDemandHighlight && isSpotlight && "nn-evidence-demand--lit",
+                "inline-flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold",
+                "border-amber-500/50 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25",
+                evidenceDemandHighlight && isSpotlight && "animate-pulse ring-1 ring-amber-400",
               )}
             >
               ?
             </button>
           ) : null}
-          {isClaim && sourcesLinked === 0 && unsupported ? (
-            <span className="sr-only">No retrieved source linked</span>
-          ) : null}
         </motion.div>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-xs">
-        <p className="font-medium">{style.label}</p>
-        <p className="text-muted-foreground">
+        <p className="font-medium text-xs">{style.label}</p>
+        <p className="text-[11px] text-muted-foreground">
           {isClaim
             ? unsupported
-              ? "Inspect claim · No retrieved source linked · ? asks for evidence"
-              : "Inspect claim — syncs chat, graph, and signals"
-            : "Observable response structure — not factual verification"}
+              ? "Unverified assertion · Click to inspect evidence in 3D graph · ? requests citations"
+              : "Grounded claim · Click to highlight evidence graph"
+            : "Observable response sentence classification"}
         </p>
       </TooltipContent>
     </Tooltip>
@@ -183,6 +188,8 @@ export function AnimatedAnnotatedMessage({
   className,
   sourcesLinked = 0,
 }: AnimatedAnnotatedMessageProps) {
+  const [showStructure, setShowStructure] = useState(false);
+
   const analysis = useMemo(() => {
     if (provided) return provided;
     return analyzeResponse(content);
@@ -198,27 +205,38 @@ export function AnimatedAnnotatedMessage({
   );
 
   return (
-    <div className={cn("w-full", className)}>
-      {/* DISPLAY MARKDOWN — first-class assistant rendering */}
-      <div className="max-w-[85%] rounded-xl border border-border bg-white/[0.03] px-3 py-2 text-sm leading-relaxed text-foreground/90">
+    <div className={cn("w-full space-y-3", className)}>
+      {/* Markdown Content (Document reading mode) */}
+      <div className="text-[15px] leading-7 text-foreground/90">
         <MessageMarkdown content={content} />
       </div>
 
-      {/* ANALYZED STRUCTURE — separate from display markdown */}
+      {/* Epistemic Reasoning Structure Breakdown */}
       {structural.length > 0 ? (
-        <div className="mt-2 max-w-[85%] space-y-1.5 rounded-xl border border-border/50 bg-black/20 px-2 py-2">
-          <p className="px-1 text-[10px] tracking-[0.12em] text-muted-foreground uppercase">
-            Observable response structure
-          </p>
-          {structural.map((sentence, index) => (
-            <StructureChip
-              key={`${String(sentence.start)}-${String(sentence.end)}`}
-              sentence={sentence}
-              index={index}
-              analysis={analysis}
-              sourcesLinked={sourcesLinked}
-            />
-          ))}
+        <div className="pt-2 border-t border-border/40">
+          <div className="flex items-center justify-between pb-1.5">
+            <button
+              type="button"
+              onClick={() => setShowStructure((prev) => !prev)}
+              className="text-[11px] font-medium text-muted-foreground/80 hover:text-foreground transition-colors"
+            >
+              {showStructure ? "Hide reasoning breakdown" : `Show reasoning breakdown (${structural.length} elements)`}
+            </button>
+          </div>
+
+          {showStructure ? (
+            <div className="space-y-1 pt-1">
+              {structural.map((sentence, index) => (
+                <StructureChip
+                  key={`${String(sentence.start)}-${String(sentence.end)}`}
+                  sentence={sentence}
+                  index={index}
+                  analysis={analysis}
+                  sourcesLinked={sourcesLinked}
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -226,3 +244,4 @@ export function AnimatedAnnotatedMessage({
     </div>
   );
 }
+

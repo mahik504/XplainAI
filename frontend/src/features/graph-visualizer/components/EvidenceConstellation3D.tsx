@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RotateCcw } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -35,12 +34,12 @@ interface EvidenceConstellation3DProps {
 }
 
 const TYPE_PALETTE: Record<string, { hex: number; css: string; label: string }> = {
-  claim: { hex: 0xe11d48, css: "#E11D48", label: "Assertion" },
+  claim: { hex: 0x3b82f6, css: "#3B82F6", label: "Assertion" },
   evidence: { hex: 0x10b981, css: "#10B981", label: "Evidence" },
-  source: { hex: 0x38bdf8, css: "#38BDF8", label: "Source" },
-  inference: { hex: 0x818cf8, css: "#818CF8", label: "Inference" },
-  assumption: { hex: 0xf59e0b, css: "#F59E0B", label: "Assumption" },
-  conclusion: { hex: 0xec4899, css: "#EC4899", label: "Conclusion" },
+  source: { hex: 0x06b6d4, css: "#06B6D4", label: "Source" },
+  inference: { hex: 0x8b5cf6, css: "#8B5CF6", label: "Connector" },
+  assumption: { hex: 0xf59e0b, css: "#F59E0B", label: "Uncertainty" },
+  conclusion: { hex: 0x38bdf8, css: "#38BDF8", label: "Conclusion" },
 };
 
 export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = ({
@@ -62,7 +61,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
 
   const resetCamera = useCallback(() => {
     if (cameraRef.current && controlsRef.current) {
-      cameraRef.current.position.set(0, 35, 175);
+      cameraRef.current.position.set(0, 30, 160);
       controlsRef.current.target.set(0, 0, 0);
       controlsRef.current.update();
     }
@@ -74,42 +73,42 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     const width = container.clientWidth || 600;
     const height = container.clientHeight || 400;
 
-    // 1. Scene & Deep Wine Atmospheric Fog
+    // 1. Scene & Clean Dark Atmospheric Fog
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x070407, 0.0035);
+    scene.fog = new THREE.FogExp2(0x09090b, 0.003);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 1000);
-    camera.position.set(0, 35, 175);
+    const camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 1000);
+    camera.position.set(0, 30, 160);
     cameraRef.current = camera;
 
     // 2. High-Performance WebGL Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x070407, 1);
+    renderer.setClearColor(0x09090b, 1);
     container.replaceChildren(renderer.domElement);
     rendererRef.current = renderer;
 
     // 3. Smooth Damped Orbit Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.07;
-    controls.maxDistance = 320;
-    controls.minDistance = 25;
+    controls.dampingFactor = 0.06;
+    controls.maxDistance = 300;
+    controls.minDistance = 20;
     controlsRef.current = controls;
 
-    // 4. Calibrated Deep Wine & Jade Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xf9f9fb, 0.85);
+    // 4. Balanced Atmospheric Lighting Rig
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
 
-    const wineKeyLight = new THREE.PointLight(0xe11d48, 3.0, 380);
-    wineKeyLight.position.set(20, 60, 60);
-    scene.add(wineKeyLight);
+    const blueKeyLight = new THREE.PointLight(0x3b82f6, 2.5, 360);
+    blueKeyLight.position.set(30, 50, 60);
+    scene.add(blueKeyLight);
 
-    const jadeRimLight = new THREE.PointLight(0x10b981, 2.0, 320);
-    jadeRimLight.position.set(-60, -30, 40);
-    scene.add(jadeRimLight);
+    const emeraldRimLight = new THREE.PointLight(0x10b981, 2.0, 300);
+    emeraldRimLight.position.set(-50, -30, 40);
+    scene.add(emeraldRimLight);
 
     // 5. Multi-Layer Cosmic Particles
     const starCount = 450;
@@ -203,23 +202,23 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
 
       const isConflict = e.type === "contradicts";
-      const edgeColor = isConflict ? 0xff2e63 : 0x881337;
+      const edgeColor = isConflict ? 0xef4444 : 0x3b82f6;
 
       const lineMat = new THREE.LineBasicMaterial({
         color: edgeColor,
         transparent: true,
-        opacity: isConflict ? 0.95 : 0.55,
+        opacity: isConflict ? 0.9 : 0.4,
       });
 
       const line = new THREE.Line(lineGeo, lineMat);
       scene.add(line);
 
       // Light particle travelling along curve
-      const pGeo = new THREE.SphereGeometry(1.1, 12, 12);
+      const pGeo = new THREE.SphereGeometry(1.0, 12, 12);
       const pMat = new THREE.MeshBasicMaterial({
-        color: isConflict ? 0xff2e63 : 0xe11d48,
+        color: isConflict ? 0xef4444 : 0x60a5fa,
         transparent: true,
-        opacity: 0.95,
+        opacity: 0.9,
       });
       const pMesh = new THREE.Mesh(pGeo, pMat);
       scene.add(pMesh);
@@ -305,18 +304,18 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
   }, [nodes, edges, activeNodeId, onNodeClick]);
 
   return (
-    <div className={cn("relative size-full overflow-hidden select-none bg-[#070407]", className)}>
+    <div className={cn("relative size-full overflow-hidden select-none bg-[#09090b]", className)}>
       <div ref={containerRef} className="size-full" />
 
-      {/* Floating 3D Telemetry HUD Controls */}
-      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1 rounded-xl border border-rose-950/80 bg-[#12050E]/85 p-1 backdrop-blur-xl shadow-2xl">
+      {/* Floating Camera Controls */}
+      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1 rounded-lg border border-border/60 bg-[#121215]/90 p-1 backdrop-blur-md shadow-lg">
         <Button
           type="button"
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0 text-zinc-400 hover:text-rose-400 transition active:scale-95"
+          className="size-7 p-0 text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
           onClick={resetCamera}
-          title="Reset 3D Space Orbit"
+          title="Reset Camera Angle"
         >
           <RotateCcw className="size-3.5" />
         </Button>
@@ -325,31 +324,31 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       {/* Active Raycast HUD Card */}
       {hoveredNode && hudPos ? (
         <div
-          className="pointer-events-none absolute z-30 flex max-w-xs -translate-x-1/2 -translate-y-full flex-col gap-1.5 rounded-2xl border border-rose-900/80 bg-[#0E040B]/95 p-3 text-xs text-zinc-200 shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl"
-          style={{ left: hudPos.x, top: hudPos.y - 14 }}
+          className="pointer-events-none absolute z-30 flex max-w-xs -translate-x-1/2 -translate-y-full flex-col gap-1 rounded-xl border border-border/80 bg-[#161619]/95 p-2.5 text-xs text-foreground shadow-2xl backdrop-blur-xl"
+          style={{ left: hudPos.x, top: hudPos.y - 12 }}
         >
           <div className="flex items-center justify-between gap-2">
             <span
               className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider font-semibold"
-              style={{ color: TYPE_PALETTE[hoveredNode.type]?.css || "#E11D48" }}
+              style={{ color: TYPE_PALETTE[hoveredNode.type]?.css || "#3B82F6" }}
             >
               <span
-                className="size-2 rounded-full shadow-[0_0_8px_currentColor]"
-                style={{ backgroundColor: TYPE_PALETTE[hoveredNode.type]?.css || "#E11D48" }}
+                className="size-1.5 rounded-full"
+                style={{ backgroundColor: TYPE_PALETTE[hoveredNode.type]?.css || "#3B82F6" }}
               />
               {TYPE_PALETTE[hoveredNode.type]?.label || hoveredNode.type}
             </span>
 
             {hoveredNode.status ? (
-              <Badge variant="amber" className="text-[9px] font-mono px-1.5 py-0 uppercase border-rose-500/30 bg-rose-500/20 text-rose-300">
+              <span className="rounded bg-white/[0.08] px-1.5 py-0.2 text-[9px] font-mono text-muted-foreground uppercase">
                 {hoveredNode.status}
-              </Badge>
+              </span>
             ) : null}
           </div>
 
-          <div className="font-semibold text-zinc-100 text-xs leading-snug">{hoveredNode.label}</div>
+          <div className="font-medium text-foreground text-xs leading-snug">{hoveredNode.label}</div>
           {hoveredNode.description ? (
-            <div className="text-[11px] leading-relaxed text-zinc-400 line-clamp-2">
+            <div className="text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
               {hoveredNode.description}
             </div>
           ) : null}

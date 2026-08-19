@@ -1,11 +1,12 @@
 import type { Edge, Node, NodeMouseHandler } from "@xyflow/react";
 import { AnimatePresence } from "framer-motion";
 import {
-  BookOpen,
   Activity,
-  Split,
+  BookOpen,
   Box,
   FileText,
+  Split,
+  X,
 } from "lucide-react";
 import React, { useState } from "react";
 
@@ -17,6 +18,7 @@ import type { RetrievedSource } from "@/lib/sources";
 import type { StageEvent } from "@/lib/stage-graph";
 import type { ResponseStructureAnalysis } from "@/lib/xai";
 import { cn } from "@/lib/utils";
+import { useUIStore } from "@/stores/ui-store";
 
 import { CounterPerspectiveCard } from "./CounterPerspectiveCard";
 import { MissingContextCard, type MissingContextItem } from "./MissingContextCard";
@@ -72,6 +74,7 @@ export function ExplainabilityPanel({
   selectedNodeId,
 }: ExplainabilityPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>("topology");
+  const setInspectorOpen = useUIStore((state) => state.setInspectorOpen);
 
   const showLegend =
     Boolean(responseAnalysis && responseAnalysis.score.sentenceCount > 0) &&
@@ -80,58 +83,63 @@ export function ExplainabilityPanel({
   return (
     <aside
       className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-rose-950/70 bg-[#070407]/90 shadow-2xl backdrop-blur-2xl",
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-[#101014] border-l border-border/60 shadow-2xl",
         className,
       )}
     >
-      {/* Tactical HUD Header & Navigation Tabs */}
-      <header className="shrink-0 border-b border-rose-950/70 bg-[#12050E]/50 px-3 py-2.5">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-rose-400 font-semibold">
-                EXPLAINABILITY COCKPIT
-              </span>
-              <span className="size-1.5 rounded-full bg-rose-400 shadow-[0_0_8px_#e11d48]" />
-            </div>
-            <p className="text-xs font-semibold text-zinc-100 font-display">
-              {claimFocusActive ? "Claim Verification Active" : "Observable Truth Engine"}
-            </p>
+      {/* Header & Tabs */}
+      <header className="shrink-0 border-b border-border/40 bg-[#121216] px-3.5 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-display text-xs font-semibold tracking-tight text-foreground">
+              {claimFocusActive ? "Claim Verification" : "Evidence & Structure"}
+            </span>
           </div>
 
-          <div className="flex items-center gap-1 rounded-xl border border-rose-950/80 bg-[#140610]/80 p-0.5 shadow-inner">
-            <TabButton
-              active={activeTab === "topology"}
-              onClick={() => setActiveTab("topology")}
-              icon={Box}
-              label="3D Galaxy"
-              badge={nodes.length > 0 ? String(nodes.length) : undefined}
-            />
-            <TabButton
-              active={activeTab === "sources"}
-              onClick={() => setActiveTab("sources")}
-              icon={BookOpen}
-              label="Dossier"
-              badge={retrievedSources.length > 0 ? String(retrievedSources.length) : undefined}
-            />
-            <TabButton
-              active={activeTab === "signals"}
-              onClick={() => setActiveTab("signals")}
-              icon={Activity}
-              label="Signals"
-            />
-            <TabButton
-              active={activeTab === "dialectic"}
-              onClick={() => setActiveTab("dialectic")}
-              icon={Split}
-              label="Dialectic"
-            />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-black/30 p-0.5">
+              <TabButton
+                active={activeTab === "topology"}
+                onClick={() => setActiveTab("topology")}
+                icon={Box}
+                label="3D Graph"
+                badge={nodes.length > 0 ? String(nodes.length) : undefined}
+              />
+              <TabButton
+                active={activeTab === "sources"}
+                onClick={() => setActiveTab("sources")}
+                icon={BookOpen}
+                label="Sources"
+                badge={retrievedSources.length > 0 ? String(retrievedSources.length) : undefined}
+              />
+              <TabButton
+                active={activeTab === "signals"}
+                onClick={() => setActiveTab("signals")}
+                icon={Activity}
+                label="Signals"
+              />
+              <TabButton
+                active={activeTab === "dialectic"}
+                onClick={() => setActiveTab("dialectic")}
+                icon={Split}
+                label="Dialectic"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setInspectorOpen(false)}
+              className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground"
+              title="Close panel"
+            >
+              <X className="size-3.5" />
+            </button>
           </div>
         </div>
 
-        {/* Live Stage Progress Strip */}
+        {/* Live Stage Progress */}
         {(isStreaming || stageEvents.length > 0) && (
-          <div className="mt-2.5 pt-2 border-t border-rose-950/40">
+          <div className="mt-2 pt-2 border-t border-border/30">
             <StageRail events={stageEvents} isStreaming={isStreaming} mode={runMode} />
           </div>
         )}
@@ -176,11 +184,11 @@ export function ExplainabilityPanel({
           <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
             <RetrievedSourcesCard sources={retrievedSources} emptyHint={sourcesEmptyHint} />
             {!sourcesEmptyHint && retrievedSources.length === 0 ? (
-              <div className="rounded-xl border border-rose-950/80 bg-[#12050E]/40 p-6 text-center text-xs text-zinc-400">
-                <FileText className="mx-auto size-8 text-rose-700/60 mb-2" />
-                <p className="font-medium text-zinc-200">No retrieved sources for this response.</p>
-                <p className="mt-1 text-zinc-500">
-                  Tool-gathered sources from ArXiv, Wikipedia, and web will appear here.
+              <div className="rounded-xl border border-border/60 bg-white/[0.02] p-6 text-center text-xs text-muted-foreground">
+                <FileText className="mx-auto size-8 text-muted-foreground/40 mb-2" />
+                <p className="font-medium text-foreground">No retrieved sources for this inquiry.</p>
+                <p className="mt-1 text-muted-foreground/80">
+                  Gathered sources from ArXiv, Wikipedia, and the web will appear here.
                 </p>
               </div>
             ) : null}
@@ -226,10 +234,10 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all active:scale-95",
+        "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition",
         active
-          ? "bg-[#23091B] text-rose-200 shadow-sm border border-rose-500/30"
-          : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]",
+          ? "bg-white/[0.1] text-foreground shadow-sm"
+          : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]",
       )}
     >
       <Icon className="size-3" />
@@ -238,7 +246,7 @@ function TabButton({
         <span
           className={cn(
             "rounded-full px-1.5 text-[9px] font-mono",
-            active ? "bg-rose-500/25 text-rose-200" : "bg-zinc-800 text-zinc-500",
+            active ? "bg-primary text-primary-foreground" : "bg-white/[0.08] text-muted-foreground",
           )}
         >
           {badge}
@@ -247,3 +255,4 @@ function TabButton({
     </button>
   );
 }
+

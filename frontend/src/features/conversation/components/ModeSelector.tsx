@@ -70,7 +70,7 @@ export function ModeSelector({ value, onChange, disabled }: ModeSelectorProps) {
         <div
           role="listbox"
           aria-label="Response mode"
-          className="absolute bottom-full left-0 z-40 mb-2 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border/60 bg-[#12121A]/96 py-1 shadow-[0_20px_50px_-28px_oklch(0_0_0_/_80%)] backdrop-blur-xl"
+          className="absolute bottom-full left-0 z-40 mb-2 w-72 overflow-hidden rounded-xl border border-border/80 bg-[#161619] p-1 shadow-2xl"
         >
           {RUN_MODES.map((mode) => {
             const Icon = ICONS[mode.icon];
@@ -82,8 +82,8 @@ export function ModeSelector({ value, onChange, disabled }: ModeSelectorProps) {
                 role="option"
                 aria-selected={active}
                 className={cn(
-                  "flex w-full items-start gap-3 px-3 py-2.5 text-left transition",
-                  active ? "bg-white/[0.06]" : "hover:bg-white/[0.04]",
+                  "flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition",
+                  active ? "bg-white/[0.08] text-foreground" : "hover:bg-white/[0.04] text-muted-foreground",
                 )}
                 onClick={() => {
                   onChange(mode.id);
@@ -92,14 +92,14 @@ export function ModeSelector({ value, onChange, disabled }: ModeSelectorProps) {
               >
                 <Icon
                   className={cn(
-                    "mt-0.5 size-4 shrink-0",
+                    "mt-0.5 size-3.5 shrink-0",
                     active ? "text-primary" : "text-muted-foreground",
                   )}
                   aria-hidden
                 />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-medium text-foreground">{mode.label}</span>
-                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                  <span className="block text-xs font-medium text-foreground">{mode.label}</span>
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground/80">
                     {mode.description}
                   </span>
                 </span>

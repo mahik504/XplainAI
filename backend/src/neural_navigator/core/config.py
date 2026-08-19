@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.openai.com/v1"
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
+    google_api_key: SecretStr | None = None
+    custom_llm_base_url: str | None = None
+    custom_llm_api_key: SecretStr | None = None
+    custom_chat_model: str | None = None
     default_chat_model: str = "gpt-4.1-mini"
     llm_request_timeout_seconds: float = Field(default=60.0, gt=0)
     llm_max_retries: int = Field(default=2, ge=0, le=5)

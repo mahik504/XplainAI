@@ -5,6 +5,7 @@ export interface ChatModelInfo {
   label: string;
   description: string;
   tier: string;
+  provider?: string;
 }
 
 export interface ChatModelsResponse {

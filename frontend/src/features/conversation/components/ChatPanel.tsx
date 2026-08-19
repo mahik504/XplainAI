@@ -2,22 +2,13 @@ import { motion } from "framer-motion";
 import {
   ArrowUp,
   Copy,
-  MessagesSquare,
   RotateCcw,
   Square,
-  Sparkles,
-  BookOpen,
-  Cpu,
-  Flame,
-  ShieldCheck,
-  Compass,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { MessageMarkdown } from "@/components/common/MessageMarkdown";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { RunMode } from "@/lib/run-mode";
 import type { StageEvent } from "@/lib/stage-graph";
 import type { ResponseStructureAnalysis } from "@/lib/xai";
@@ -27,16 +18,6 @@ import { useUIStore } from "@/stores/ui-store";
 
 import { AnimatedAnnotatedMessage } from "./AnimatedAnnotatedMessage";
 import { ModeSelector } from "./ModeSelector";
-
-function formatMessageTimestamp(value: string): string {
-  const ms = Date.parse(value);
-  if (!Number.isFinite(ms)) return value;
-  return new Date(ms).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
 
 export type ConversationRole = "user" | "assistant" | "system";
 
@@ -66,38 +47,26 @@ interface ChatPanelProps {
   className?: string;
 }
 
-const HERO_RESEARCH_PROMPTS = [
+const PROMPT_STARTERS = [
   {
-    id: "quantum",
-    tag: "Quantum Physics",
-    icon: Cpu,
-    title: "Quantum Decoherence & Thermal Noise",
+    title: "Quantum error correction protocols",
     prompt:
-      "How do superconducting transmon qubits maintain quantum coherence against thermal photon noise, and what are the leading error mitigation protocols?",
+      "Explain the leading quantum error correction codes for superconducting qubits and compare surface codes against color codes.",
   },
   {
-    id: "biotech",
-    tag: "Longevity & Genetics",
-    icon: Flame,
-    title: "Cellular Senescence & Reprogramming",
+    title: "WebGPU compute shaders vs WebGL",
     prompt:
-      "What are the precise molecular pathways by which Yamanaka factors (OSKM) induce partial epigenetic rejuvenation without teratoma formation?",
+      "Analyze the performance differences between WebGPU compute shaders and WebGL 2.0 rasterization for large-scale force-directed graph physics.",
   },
   {
-    id: "consensus",
-    tag: "Distributed Systems",
-    icon: Compass,
-    title: "Raft vs Multi-Paxos Invariants",
+    title: "Epigenetic cellular rejuvenation",
     prompt:
-      "Compare Raft vs Multi-Paxos consensus leader election dynamics during asymmetric network partitions, focusing on formal safety invariants.",
+      "What are the molecular mechanisms of partial cellular reprogramming using Yamanaka factors, and how do they avoid teratoma risk?",
   },
   {
-    id: "economics",
-    tag: "Macroeconomics",
-    icon: ShieldCheck,
-    title: "Central Bank Quantitative Tightening",
+    title: "Raft consensus safety invariants",
     prompt:
-      "Analyze the empirical impact of central bank balance sheet reduction (QT) on repo market liquidity, treasury term premia, and bank reserves.",
+      "Compare Raft vs Multi-Paxos leader election during asymmetric network partitions, focusing on formal safety invariants.",
   },
 ];
 
@@ -106,7 +75,7 @@ export function ChatPanel({
   isStreaming = false,
   disabled = false,
   error = null,
-  placeholder = "Ask complex scientific, economic, or engineering research questions...",
+  placeholder = "Ask a research question…",
   responseAnalysis = null,
   runMode = "balanced",
   onRunModeChange,
@@ -131,7 +100,7 @@ export function ChatPanel({
     const composer = composerRef.current;
     if (!composer) return;
     composer.style.height = "0px";
-    composer.style.height = `${String(Math.min(composer.scrollHeight, 140))}px`;
+    composer.style.height = `${String(Math.min(composer.scrollHeight, 180))}px`;
   }, [draft]);
 
   useEffect(() => {
@@ -187,290 +156,209 @@ export function ChatPanel({
   const lastAssistantId = isStreaming && lastAssistant ? lastAssistant.id : undefined;
 
   return (
-    <div
-      className={cn(
-        "relative flex h-full flex-col overflow-hidden rounded-2xl border border-rose-950/70 bg-[#070407]/90 shadow-2xl backdrop-blur-2xl",
-        className,
-      )}
-    >
-      {/* Studio Tactical Header */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-rose-950/70 px-4 bg-[#12050E]/50">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-400">
-            <MessagesSquare className="size-3.5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-tight text-zinc-100 font-display">
-                Tactical Research Studio
-              </span>
-              <span className="inline-block size-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
-            </div>
-            <p className="text-[10px] font-mono text-rose-300/60">Observable Synthesis ? Multi-Source Grounding</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {isStreaming ? (
-            <Badge variant="amber" className="animate-pulse text-[11px] gap-1 px-2 py-0.5 font-mono border-rose-500/30 bg-rose-500/15 text-rose-300">
-              <span className="size-1.5 rounded-full bg-rose-400 shadow-[0_0_6px_#e11d48]" />
-              Synthesizing Evidence...
-            </Badge>
-          ) : sourcesLinked > 0 ? (
-            <Badge variant="emerald" className="text-[11px] gap-1 px-2 py-0.5 font-mono">
-              <BookOpen className="size-3" />
-              {sourcesLinked} Grounded Citations
-            </Badge>
-          ) : null}
-        </div>
-      </div>
-
-      {/* Main Conversation Stream / Editorial Hero */}
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+    <div className={cn("relative flex h-full flex-col overflow-hidden bg-[#09090b]", className)}>
+      {/* Scrollable Conversation Canvas */}
+      <div className="relative min-h-0 flex-1 overflow-y-auto scrollbar-slim">
         {messages.length === 0 ? (
-          <div className="flex h-full flex-col justify-between overflow-y-auto px-6 py-8">
-            <div className="mx-auto max-w-2xl space-y-6 pt-4">
+          <div className="flex min-h-full flex-col items-center justify-center px-4 py-12">
+            <div className="w-full max-w-2xl space-y-8 text-center">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/10 px-3.5 py-1 text-[11px] font-mono font-medium tracking-wide text-rose-300 shadow-[0_0_15px_rgba(225,29,72,0.15)]">
-                  <Sparkles className="size-3" />
-                  XPLAINAI 3.0 ? SUPER-AGENTIC RESEARCH OS
-                </div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-100 font-display leading-tight">
-                  Observable reasoning. <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-300 to-amber-200">
-                    Empirical evidence.
-                  </span>
+                <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                  What would you like to explore?
                 </h1>
-                <p className="text-sm leading-relaxed text-zinc-400 max-w-xl">
-                  Ask deep scientific, engineering, or conceptual questions. XplainAI retrieves verified
-                  academic preprints & web evidence, extracts testable assertions, and maps the complete
-                  knowledge topology in 3D ? with zero fabricated reasoning.
+                <p className="mx-auto max-w-lg text-sm leading-relaxed text-muted-foreground">
+                  Empirical research with verified academic sources, structured reasoning breakdown,
+                  and 3D knowledge mapping.
                 </p>
               </div>
 
-              {/* Curated Research Prompt Bento */}
-              <div className="space-y-2.5 pt-2">
-                <div className="text-[11px] font-mono tracking-widest text-rose-300/60 uppercase">
-                  Select a research vector
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {HERO_RESEARCH_PROMPTS.map((p) => {
-                    const Icon = p.icon;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => {
-                          onSend?.(p.prompt);
-                        }}
-                        className="group flex flex-col items-start rounded-xl border border-rose-950/80 bg-[#12050E]/50 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-500/50 hover:bg-[#180814]/80 hover:shadow-[0_8px_25px_rgba(225,29,72,0.15)] active:scale-[0.98]"
-                      >
-                        <div className="flex w-full items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5 rounded-md border border-rose-900/50 bg-[#1e0717]/80 px-2 py-0.5 text-[10px] font-medium text-rose-300 font-mono">
-                            <Icon className="size-3 text-rose-400" />
-                            {p.tag}
-                          </span>
-                          <ArrowUp className="size-3.5 text-zinc-600 transition-colors group-hover:text-rose-400 group-hover:rotate-45" />
-                        </div>
-                        <h4 className="mt-2 text-xs font-semibold text-zinc-200 group-hover:text-rose-200 font-display">
-                          {p.title}
-                        </h4>
-                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-zinc-400">
-                          {p.prompt}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
+              {/* Prompt Starters */}
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 text-left">
+                {PROMPT_STARTERS.map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onSend?.(item.prompt)}
+                    className="group flex flex-col justify-between rounded-xl border border-border/60 bg-white/[0.02] p-3.5 transition hover:border-border hover:bg-white/[0.05] active:scale-[0.99]"
+                  >
+                    <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">
+                      {item.title}
+                    </span>
+                    <span className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground">
+                      {item.prompt}
+                    </span>
+                  </button>
+                ))}
               </div>
-            </div>
-
-            {/* Active Research Pipeline Tools Pill */}
-            <div className="mx-auto flex flex-wrap items-center justify-center gap-3 pt-6 text-[11px] text-zinc-500">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-rose-400/80 font-semibold">Active Research Mesh:</span>
-              <span className="rounded-md border border-rose-950/80 bg-[#140610]/80 px-2.5 py-0.5 text-zinc-300 font-mono text-[10px]">
-                ArXiv Preprints
-              </span>
-              <span className="rounded-md border border-rose-950/80 bg-[#140610]/80 px-2.5 py-0.5 text-zinc-300 font-mono text-[10px]">
-                Wikipedia API
-              </span>
-              <span className="rounded-md border border-rose-950/80 bg-[#140610]/80 px-2.5 py-0.5 text-zinc-300 font-mono text-[10px]">
-                DuckDuckGo Search
-              </span>
-              <span className="rounded-md border border-rose-950/80 bg-[#140610]/80 px-2.5 py-0.5 text-zinc-300 font-mono text-[10px]">
-                AST Calculator
-              </span>
             </div>
           </div>
         ) : (
-          <ScrollArea className="h-full">
-            <ol className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
-              {messages.map((message) => {
-                const showCaret = message.id === lastAssistantId;
-                const isLatestFinishedAssistant =
-                  !isStreaming &&
-                  message.role === "assistant" &&
-                  message.id === lastAssistant?.id &&
-                  message.content.trim().length > 0;
+          <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
+            {messages.map((message) => {
+              const showCaret = message.id === lastAssistantId;
+              const isLatestFinishedAssistant =
+                !isStreaming &&
+                message.role === "assistant" &&
+                message.id === lastAssistant?.id &&
+                message.content.trim().length > 0;
 
-                const useAnnotation =
-                  message.role === "assistant" && !showCaret && message.content.trim().length > 0;
+              const useAnnotation =
+                message.role === "assistant" && !showCaret && message.content.trim().length > 0;
 
-                return (
-                  <motion.li
-                    key={message.id}
-                    layout
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                    className={cn(
-                      "flex flex-col gap-1.5",
-                      message.role === "user" ? "items-end" : "items-start",
-                    )}
-                  >
-                    {useAnnotation ? (
-                      <AnimatedAnnotatedMessage
-                        content={message.content}
-                        analysis={isLatestFinishedAssistant ? responseAnalysis : null}
-                        sourcesLinked={isLatestFinishedAssistant ? sourcesLinked : 0}
-                      />
-                    ) : (
-                      <div
-                        className={cn(
-                          "max-w-[min(44rem,94%)] rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                          message.role === "user"
-                            ? "border border-rose-900/50 bg-[#190615]/90 text-zinc-100 shadow-md font-medium"
-                            : "border border-rose-950/70 bg-[#11040D]/60 text-zinc-200",
-                          message.role === "system" && "border-dashed text-zinc-400 italic text-xs",
-                          showCaret && "border-rose-500/40",
-                        )}
+              return (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className={cn(
+                    "flex flex-col gap-1.5",
+                    message.role === "user" ? "items-end" : "items-start w-full",
+                  )}
+                >
+                  {useAnnotation ? (
+                    <AnimatedAnnotatedMessage
+                      content={message.content}
+                      analysis={isLatestFinishedAssistant ? responseAnalysis : null}
+                      sourcesLinked={isLatestFinishedAssistant ? sourcesLinked : 0}
+                    />
+                  ) : (
+                    <div
+                      className={cn(
+                        "rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed",
+                        message.role === "user"
+                          ? "max-w-[85%] bg-[#222226] text-foreground border border-white/[0.06]"
+                          : "w-full text-foreground/90 leading-7",
+                        message.role === "system" && "border-dashed text-muted-foreground italic text-xs",
+                      )}
+                    >
+                      {message.role === "user" || message.role === "system" ? (
+                        <span className="whitespace-pre-wrap">{message.content}</span>
+                      ) : (
+                        <MessageMarkdown content={message.content} />
+                      )}
+                      {showCaret ? <span className="typing-caret" aria-hidden /> : null}
+                    </div>
+                  )}
+
+                  {message.role === "assistant" && !showCaret && message.content.trim() ? (
+                    <div className="flex items-center gap-2 pt-1 text-muted-foreground">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground/70 transition hover:bg-white/[0.05] hover:text-foreground"
+                        onClick={() => void navigator.clipboard.writeText(message.content)}
+                        title="Copy text"
                       >
-                        {message.role === "user" || message.role === "system" ? (
-                          <span className="whitespace-pre-wrap">{message.content}</span>
-                        ) : (
-                          <MessageMarkdown content={message.content} />
-                        )}
-                        {showCaret ? <span className="typing-caret" aria-hidden /> : null}
-                      </div>
-                    )}
-                    {message.role === "assistant" && !showCaret && message.content.trim() ? (
-                      <div className="flex items-center gap-1.5 px-1">
+                        <Copy className="size-3" />
+                        <span>Copy</span>
+                      </button>
+                      {isLatestFinishedAssistant && onRetry ? (
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 active:scale-95 font-mono"
-                          onClick={() => {
-                            void navigator.clipboard.writeText(message.content);
-                          }}
+                          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground/70 transition hover:bg-white/[0.05] hover:text-foreground"
+                          onClick={onRetry}
+                          title="Retry response"
                         >
-                          <Copy className="size-3" />
-                          Copy
+                          <RotateCcw className="size-3" />
+                          <span>Retry</span>
                         </button>
-                        {isLatestFinishedAssistant && onRetry ? (
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 active:scale-95 font-mono"
-                            onClick={onRetry}
-                          >
-                            <RotateCcw className="size-3" />
-                            Retry
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : null}
-                    {message.timestamp ? (
-                      <span className="px-1 text-[10px] font-mono text-zinc-500">
-                        {formatMessageTimestamp(message.timestamp)}
-                      </span>
-                    ) : null}
-                  </motion.li>
-                );
-              })}
-              <div ref={endRef} />
-            </ol>
-          </ScrollArea>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </motion.div>
+              );
+            })}
+            <div ref={endRef} />
+          </div>
         )}
       </div>
 
-      {/* Tactile Frosted Wine Composer Bar */}
-      <div className="shrink-0 border-t border-rose-950/70 bg-[#0F040C]/70 p-3 backdrop-blur-xl">
-        {error ? (
-          <p
-            role="alert"
-            className="mb-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 font-mono text-[11px] text-red-400"
-          >
-            {error}
-          </p>
-        ) : null}
+      {/* Floating Centered Composer */}
+      <div className="shrink-0 p-3 pb-4 sm:px-6">
+        <div className="mx-auto max-w-3xl">
+          {error ? (
+            <p
+              role="alert"
+              className="mb-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive"
+            >
+              {error}
+            </p>
+          ) : null}
 
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            submit();
-          }}
-          className={cn(
-            "relative rounded-xl border bg-[#080206]/90 p-2.5 shadow-inner transition-all duration-200",
-            "focus-within:border-rose-500/50 focus-within:ring-1 focus-within:ring-rose-500/30",
-            evidenceDemandHighlight
-              ? "border-amber-500/60 ring-1 ring-amber-500/30"
-              : "border-rose-950/80",
-          )}
-        >
-          <textarea
-            ref={composerRef}
-            aria-label="Research prompt composer"
-            value={draft}
-            onChange={(event) => {
-              setDraft(event.target.value);
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              submit();
             }}
-            onKeyDown={handleKeyDown}
-            rows={2}
-            disabled={disabled}
-            placeholder={placeholder}
-            className="scrollbar-slim max-h-36 min-h-[3rem] w-full resize-none overflow-y-auto rounded-lg border-0 bg-transparent px-2 py-1 text-sm leading-relaxed text-zinc-100 placeholder:text-zinc-500 focus:outline-none disabled:opacity-40"
-          />
+            className={cn(
+              "relative flex flex-col rounded-2xl border bg-[#121215] p-2.5 shadow-lg transition-all",
+              "focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/40",
+              evidenceDemandHighlight
+                ? "border-amber-500/60 ring-1 ring-amber-500/30"
+                : "border-border/70",
+            )}
+          >
+            <textarea
+              ref={composerRef}
+              aria-label="Research prompt input"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              disabled={disabled}
+              placeholder={placeholder}
+              className="scrollbar-slim max-h-44 min-h-[2.5rem] w-full resize-none overflow-y-auto rounded-lg bg-transparent px-2 py-1 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:outline-none disabled:opacity-40"
+            />
 
-          <div className="mt-2 flex items-center justify-between gap-2 border-t border-rose-950/40 pt-2 px-1">
-            <div className="flex items-center gap-2">
-              {onRunModeChange ? (
-                <ModeSelector
-                  value={runMode}
-                  onChange={onRunModeChange}
-                  disabled={disabled || isStreaming}
-                />
-              ) : null}
-            </div>
+            <div className="flex items-center justify-between gap-2 pt-2 px-1">
+              <div className="flex items-center gap-1.5">
+                {onRunModeChange ? (
+                  <ModeSelector
+                    value={runMode}
+                    onChange={onRunModeChange}
+                    disabled={disabled || isStreaming}
+                  />
+                ) : null}
+              </div>
 
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:inline-block font-mono text-[10px] text-zinc-500">
-                ? Synthesize ? Shift+? Newline
-              </span>
-              {isStreaming && onStop ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="h-8 gap-1.5 text-xs text-red-400 border-red-500/30 hover:bg-red-500/10 active:scale-95"
-                  onClick={onStop}
-                >
-                  <Square className="size-3" />
-                  Stop
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!canSend}
-                  className="h-8 gap-1.5 px-4 text-xs font-semibold bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-[0_0_18px_rgba(225,29,72,0.45)] active:scale-95 transition-all"
-                >
-                  <span>Synthesize</span>
-                  <ArrowUp className="size-3.5" />
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {isStreaming && onStop ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="size-8 rounded-full border-border/80 p-0 text-foreground hover:bg-white/[0.08]"
+                    onClick={onStop}
+                    title="Stop generation"
+                  >
+                    <Square className="size-3 fill-current" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={!canSend}
+                    className={cn(
+                      "size-8 rounded-full p-0 transition-all",
+                      canSend
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                        : "bg-white/[0.06] text-muted-foreground/40 cursor-not-allowed",
+                    )}
+                    title="Send message (Enter)"
+                  >
+                    <ArrowUp className="size-4" />
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
+          <p className="mt-1.5 text-center text-[11px] text-muted-foreground/60">
+            XplainAI grounds responses in observable sources. Verify critical claims.
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+

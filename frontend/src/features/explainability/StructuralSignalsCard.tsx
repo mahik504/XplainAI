@@ -1,6 +1,5 @@
 import type { ClaimFocusMetrics } from "@/lib/claim-focus";
 import type { ResponseStructureAnalysis } from "@/lib/xai";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Activity, ShieldCheck, HelpCircle, CheckCircle2 } from "lucide-react";
 
@@ -19,29 +18,29 @@ export function StructuralSignalsCard({
     const supportPct = Math.round(claimMetrics.supportLevel * 100);
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-rose-500/35 bg-rose-950/25 p-3.5 shadow-lg">
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/[0.04] p-3.5 shadow-sm">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-rose-400 font-semibold">
-              FOCUSED ASSERTION
+            <span className="font-mono text-[10px] uppercase tracking-wider text-blue-400 font-semibold">
+              Focused Assertion
             </span>
-            <Badge variant="amber" className="ml-auto text-[10px] font-mono px-1.5 py-0 border-rose-500/30 bg-rose-500/20 text-rose-300">
+            <span className="ml-auto text-[10px] font-mono px-2 py-0.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-400">
               {supportPct}% Grounded
-            </Badge>
+            </span>
           </div>
-          <p className="text-xs leading-relaxed text-zinc-100 font-medium font-display">
+          <p className="text-xs leading-relaxed text-foreground font-medium">
             "{claimMetrics.assertionText}"
           </p>
         </div>
 
         {/* Progress bar */}
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] font-mono text-zinc-400">
+          <div className="flex justify-between text-[11px] font-mono text-muted-foreground">
             <span>Empirical Grounding</span>
-            <span className="text-rose-400 font-semibold">{supportPct}%</span>
+            <span className="text-blue-400 font-semibold">{supportPct}%</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
             <div
-              className="h-full bg-gradient-to-r from-rose-500 to-emerald-400 transition-all duration-500 shadow-[0_0_10px_rgba(225,29,72,0.5)]"
+              className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 transition-all duration-500"
               style={{ width: `${supportPct}%` }}
             />
           </div>
@@ -57,7 +56,7 @@ export function StructuralSignalsCard({
           <SignalMetricTile
             label="Retrieved Sources"
             value={claimMetrics.retrievedSourcesCount}
-            tone="rose"
+            tone="blue"
             icon={ShieldCheck}
           />
           <SignalMetricTile
@@ -79,10 +78,10 @@ export function StructuralSignalsCard({
 
   if (!analysis) {
     return (
-      <div className="rounded-xl border border-rose-950/80 bg-[#12050E]/40 p-6 text-center text-xs text-zinc-400">
-        <Activity className="mx-auto size-8 text-rose-700/60 mb-2" />
-        <p className="font-medium text-zinc-200">No Epistemic Signals Yet</p>
-        <p className="mt-1 text-zinc-500">
+      <div className="rounded-xl border border-border/60 bg-white/[0.02] p-6 text-center text-xs text-muted-foreground">
+        <Activity className="mx-auto size-8 text-muted-foreground/40 mb-2" />
+        <p className="font-medium text-foreground">No Epistemic Signals Yet</p>
+        <p className="mt-1 text-muted-foreground/80">
           Observable sentence markers, evidence ratios, and claim graphs will compute as responses stream.
         </p>
       </div>
@@ -99,31 +98,31 @@ export function StructuralSignalsCard({
     <div className="space-y-4">
       {/* Structural Distribution Spectrum */}
       <div className="space-y-1.5">
-        <div className="flex justify-between text-[11px] font-mono text-zinc-400">
+        <div className="flex justify-between text-[11px] font-mono text-muted-foreground">
           <span>Sentence Anatomy Spectrum</span>
           <span>{totalSentences} sentences</span>
         </div>
-        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-800 p-0.5 gap-0.5">
+        <div className="flex h-2 w-full overflow-hidden rounded-full bg-white/[0.06] p-0.5 gap-0.5">
           <div
-            className="h-full rounded-full bg-rose-500 transition-all shadow-[0_0_8px_rgba(225,29,72,0.6)]"
+            className="h-full rounded-full bg-blue-500 transition-all"
             style={{ width: `${claimPct}%` }}
             title={`Assertions: ${score.claimCount}`}
           />
           <div
-            className="h-full rounded-full bg-emerald-400 transition-all shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+            className="h-full rounded-full bg-emerald-400 transition-all"
             style={{ width: `${evidencePct}%` }}
             title={`Evidence: ${score.evidenceCount}`}
           />
           <div
-            className="h-full rounded-full bg-indigo-400 transition-all"
+            className="h-full rounded-full bg-violet-400 transition-all"
             style={{ width: `${reasoningPct}%` }}
             title={`Connectors: ${score.reasoningCount}`}
           />
         </div>
-        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 pt-0.5">
-          <span className="flex items-center gap-1 text-rose-400">? {score.claimCount} Claims</span>
-          <span className="flex items-center gap-1 text-emerald-400">? {score.evidenceCount} Evidence</span>
-          <span className="flex items-center gap-1 text-indigo-400">? {score.reasoningCount} Connectors</span>
+        <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground pt-0.5">
+          <span className="flex items-center gap-1 text-blue-400">· {score.claimCount} Claims</span>
+          <span className="flex items-center gap-1 text-emerald-400">· {score.evidenceCount} Evidence</span>
+          <span className="flex items-center gap-1 text-violet-400">· {score.reasoningCount} Connectors</span>
         </div>
       </div>
 
@@ -131,7 +130,7 @@ export function StructuralSignalsCard({
         <SignalMetricTile
           label="Testable Claims"
           value={score.claimCount}
-          tone="rose"
+          tone="blue"
           icon={CheckCircle2}
         />
         <SignalMetricTile
@@ -161,8 +160,8 @@ export function StructuralSignalsCard({
         />
       </div>
 
-      <p className="text-[10px] font-mono text-rose-400/60 leading-relaxed">
-        ? Metrics computed directly from observable surface syntax. Zero simulated chain-of-thought.
+      <p className="text-[10px] font-mono text-muted-foreground/60 leading-relaxed">
+        Observable syntax breakdown. Zero simulated chain-of-thought.
       </p>
     </div>
   );
@@ -177,26 +176,27 @@ function SignalMetricTile({
 }: {
   label: string;
   value: number | string;
-  tone: "rose" | "emerald" | "amber" | "violet";
+  tone: "blue" | "emerald" | "amber" | "violet";
   icon: React.ComponentType<{ className?: string }>;
   className?: string;
 }) {
   const toneMap = {
-    rose: "border-rose-500/30 bg-rose-950/20 text-rose-400",
-    emerald: "border-emerald-500/30 bg-emerald-950/20 text-emerald-400",
-    amber: "border-amber-500/30 bg-amber-950/20 text-amber-400",
-    violet: "border-indigo-500/30 bg-indigo-950/20 text-indigo-400",
+    blue: "border-blue-500/30 bg-blue-500/[0.04] text-blue-400",
+    emerald: "border-emerald-500/30 bg-emerald-500/[0.04] text-emerald-400",
+    amber: "border-amber-500/30 bg-amber-500/[0.04] text-amber-400",
+    violet: "border-violet-500/30 bg-violet-500/[0.04] text-violet-400",
   }[tone];
 
   return (
-    <div className={cn("rounded-xl border p-3 bg-[#11040D]/60 transition-all duration-200 hover:bg-[#180814]/80", toneMap, className)}>
+    <div className={cn("rounded-xl border p-3 bg-white/[0.02] transition-all hover:bg-white/[0.04]", toneMap, className)}>
       <div className="flex items-center justify-between">
-        <Icon className="size-3.5 opacity-90" />
-        <span className="font-mono text-lg font-bold tracking-tight text-zinc-100 tabular-nums">
+        <Icon className="size-3.5 opacity-80" />
+        <span className="font-mono text-lg font-bold tracking-tight text-foreground tabular-nums">
           {value}
         </span>
       </div>
-      <p className="mt-1 text-[11px] font-medium text-zinc-400 font-mono">{label}</p>
+      <p className="mt-1 text-[11px] font-medium text-muted-foreground font-mono">{label}</p>
     </div>
   );
 }
+
