@@ -1,6 +1,13 @@
 import type { Edge, Node, NodeMouseHandler } from "@xyflow/react";
 import { AnimatePresence } from "framer-motion";
-import type { ReactNode } from "react";
+import {
+  BookOpen,
+  Activity,
+  Split,
+  Box,
+  FileText,
+} from "lucide-react";
+import React, { useState } from "react";
 
 import { NodeInspector } from "@/components/common/NodeInspector";
 import { StructureLegend } from "@/features/demo";
@@ -41,10 +48,11 @@ interface ExplainabilityPanelProps {
   selectedNodeId: string | null;
 }
 
+type TabType = "topology" | "sources" | "signals" | "dialectic";
+
 export function ExplainabilityPanel({
   className,
   isStreaming,
-  phase,
   runMode,
   stageEvents,
   nodes,
@@ -64,6 +72,8 @@ export function ExplainabilityPanel({
   counterPerspective,
   selectedNodeId,
 }: ExplainabilityPanelProps) {
+  const [activeTab, setActiveTab] = useState<TabType>("topology");
+
   const showLegend =
     Boolean(responseAnalysis && responseAnalysis.score.sentenceCount > 0) &&
     (showingStructure || claimFocusActive);
@@ -71,30 +81,70 @@ export function ExplainabilityPanel({
   return (
     <aside
       className={cn(
-        "glass-panel flex h-full min-h-0 flex-col overflow-hidden border border-border/50",
+        "relative flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-950/70 shadow-2xl backdrop-blur-2xl",
         className,
       )}
     >
-      <header className="shrink-0 border-b border-border/40 px-4 py-3">
-        <p className="text-[11px] tracking-[0.16em] text-muted-foreground uppercase">
-          Explainability
-        </p>
-        <p className="mt-0.5 text-sm text-foreground/90">Observable structure of this response</p>
+      {/* Cockpit Header & Navigation Tabs */}
+      <header className="shrink-0 border-b border-zinc-800/60 bg-zinc-900/30 px-3 py-2.5">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-cyan-400 font-semibold">
+                EXPLAINABILITY COCKPIT
+              </span>
+              <span className="size-1 rounded-full bg-cyan-400" />
+            </div>
+            <p className="text-xs font-semibold text-zinc-100">
+              {claimFocusActive ? "Claim Verification Active" : "Observable Truth Engine"}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/80 p-0.5">
+            <TabButton
+              active={activeTab === "topology"}
+              onClick={() => setActiveTab("topology")}
+              icon={Box}
+              label="Graph"
+              badge={nodes.length > 0 ? String(nodes.length) : undefined}
+            />
+            <TabButton
+              active={activeTab === "sources"}
+              onClick={() => setActiveTab("sources")}
+              icon={BookOpen}
+              label="Sources"
+              badge={retrievedSources.length > 0 ? String(retrievedSources.length) : undefined}
+            />
+            <TabButton
+              active={activeTab === "signals"}
+              onClick={() => setActiveTab("signals")}
+              icon={Activity}
+              label="Signals"
+            />
+            <TabButton
+              active={activeTab === "dialectic"}
+              onClick={() => setActiveTab("dialectic")}
+              icon={Split}
+              label="Dialectic"
+            />
+          </div>
+        </div>
+
+        {/* Live Stage Progress Strip */}
+        {(isStreaming || stageEvents.length > 0) && (
+          <div className="mt-2.5 pt-2 border-t border-zinc-800/40">
+            <StageRail events={stageEvents} isStreaming={isStreaming} mode={runMode} />
+          </div>
+        )}
       </header>
 
-      <div className="scrollbar-slim min-h-0 flex-1 space-y-4 overflow-y-auto p-3">
-        <Section
-          title={isStreaming || phase === "started" ? "Live orchestration" : "Run stages"}
-          {...(isStreaming ? { hint: "Actual stage events" } : {})}
-        >
-          <StageRail events={stageEvents} isStreaming={isStreaming} mode={runMode} />
-        </Section>
-
-        <Section title={graphTitle} hint={graphDescription}>
-          <div className="relative h-[280px] overflow-hidden rounded-xl border border-border/40 bg-gradient-to-b from-black/35 to-black/15 sm:h-[340px]">
+      {/* Main Tab Content */}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {activeTab === "topology" && (
+          <div className="relative size-full overflow-hidden">
             <GraphPanel
               active
-              className="h-full border-0 bg-transparent shadow-none"
+              className="size-full border-0 bg-transparent shadow-none"
               nodes={nodes}
               edges={edges}
               cameraEnabled
@@ -115,50 +165,86 @@ export function ExplainabilityPanel({
                 />
               ) : null}
             </AnimatePresence>
+            {showLegend ? (
+              <div className="absolute bottom-2 left-2 z-20">
+                <StructureLegend compact />
+              </div>
+            ) : null}
           </div>
-          {showLegend ? <StructureLegend compact /> : null}
-        </Section>
+        )}
 
-        <Section title="Structural signals">
-          <StructuralSignalsCard
-            analysis={responseAnalysis}
-            claimMetrics={claimMetrics}
-            retrievedSourcesCount={retrievedSources.length}
-          />
-        </Section>
+        {activeTab === "sources" && (
+          <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
+            <RetrievedSourcesCard sources={retrievedSources} emptyHint={sourcesEmptyHint} />
+            {!sourcesEmptyHint && retrievedSources.length === 0 ? (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-6 text-center text-xs text-zinc-400">
+                <FileText className="mx-auto size-8 text-zinc-600 mb-2" />
+                <p className="font-medium text-zinc-200">No retrieved sources for this response.</p>
+                <p className="mt-1 text-zinc-500">
+                  Tool-gathered sources from ArXiv, Wikipedia, and web will appear here.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
 
-        <Section title="Sources">
-          <RetrievedSourcesCard sources={retrievedSources} emptyHint={sourcesEmptyHint} />
-          {!sourcesEmptyHint && retrievedSources.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No retrieved sources for this response. Structural evidence markers are separate.
-            </p>
-          ) : null}
-        </Section>
+        {activeTab === "signals" && (
+          <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
+            <StructuralSignalsCard
+              analysis={responseAnalysis}
+              claimMetrics={claimMetrics}
+              retrievedSourcesCount={retrievedSources.length}
+            />
+          </div>
+        )}
 
-        <MissingContextCard items={missingContext} />
-        <CounterPerspectiveCard text={counterPerspective} />
+        {activeTab === "dialectic" && (
+          <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
+            <MissingContextCard items={missingContext} />
+            <CounterPerspectiveCard text={counterPerspective} />
+          </div>
+        )}
       </div>
     </aside>
   );
 }
 
-function Section({
-  title,
-  hint,
-  children,
+function TabButton({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  badge,
 }: {
-  title: string;
-  hint?: string;
-  children: ReactNode;
+  active: boolean;
+  onClick: () => void;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  badge?: string | undefined;
 }) {
   return (
-    <section className="space-y-2">
-      <div>
-        <h3 className="text-[11px] tracking-[0.14em] text-muted-foreground uppercase">{title}</h3>
-        {hint ? <p className="mt-0.5 text-[11px] text-muted-foreground/80">{hint}</p> : null}
-      </div>
-      {children}
-    </section>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-all",
+        active
+          ? "bg-zinc-800 text-cyan-300 shadow-sm"
+          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40",
+      )}
+    >
+      <Icon className="size-3" />
+      <span>{label}</span>
+      {badge ? (
+        <span
+          className={cn(
+            "rounded-full px-1 text-[9px] font-mono",
+            active ? "bg-cyan-500/20 text-cyan-300" : "bg-zinc-800 text-zinc-500",
+          )}
+        >
+          {badge}
+        </span>
+      ) : null}
+    </button>
   );
 }

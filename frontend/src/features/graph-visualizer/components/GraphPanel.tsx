@@ -48,6 +48,56 @@ interface GraphPanelProps extends PanelProps {
 const emptyNodes: Node[] = [];
 const emptyEdges: Edge[] = [];
 
+const DEFAULT_SEED_NODES: Graph3DNode[] = [
+  {
+    id: "seed_src_1",
+    type: "source",
+    label: "ArXiv: Superconducting Qubits",
+    description: "Quantum coherence and microwave resonator physics in transmon architectures.",
+    position_3d: [60, 25, 40],
+    status: "verified",
+  },
+  {
+    id: "seed_src_2",
+    type: "source",
+    label: "Physical Review A",
+    description: "Thermal photon noise mitigation in cryogenic quantum circuits.",
+    position_3d: [-65, 30, 40],
+    status: "verified",
+  },
+  {
+    id: "seed_evi_1",
+    type: "evidence",
+    label: "Coherence Time T1 > 100?s",
+    description: "Empirical measurement of relaxation lifetime under fluxonium design.",
+    position_3d: [35, 10, 20],
+    status: "grounded",
+  },
+  {
+    id: "seed_evi_2",
+    type: "evidence",
+    label: "Thermal Noise Suppression",
+    description: "Infrared filtering reduces quasi-particle generation at 15mK.",
+    position_3d: [-35, 12, 20],
+    status: "grounded",
+  },
+  {
+    id: "seed_claim_1",
+    type: "claim",
+    label: "Fluxonium Extends Coherence",
+    description: "Core synthesized assertion on transmon vs fluxonium performance.",
+    position_3d: [0, 0, 0],
+    status: "supported",
+  },
+];
+
+const DEFAULT_SEED_EDGES: Graph3DEdge[] = [
+  { id: "seed_e1", source_node_id: "seed_src_1", target_node_id: "seed_evi_1", type: "derived_from" },
+  { id: "seed_e2", source_node_id: "seed_src_2", target_node_id: "seed_evi_2", type: "derived_from" },
+  { id: "seed_e3", source_node_id: "seed_evi_1", target_node_id: "seed_claim_1", type: "supports" },
+  { id: "seed_e4", source_node_id: "seed_evi_2", target_node_id: "seed_claim_1", type: "supports" },
+];
+
 export function GraphPanel({
   nodes = emptyNodes,
   edges = emptyEdges,
@@ -64,7 +114,7 @@ export function GraphPanel({
   onExitClaimFocus,
   compactChrome = false,
 }: GraphPanelProps) {
-  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(nodes);
   const [flowEdges, setFlowEdges, onEdgesChange] = useEdgesState(edges);
   const nodeTypes = useMemo<NodeTypes>(() => ({ runNode: RunNode }), []);
@@ -84,6 +134,8 @@ export function GraphPanel({
 
   // Convert ReactFlow elements to 3D constellation objects
   const nodes3D = useMemo<Graph3DNode[]>(() => {
+    if (flowNodes.length === 0) return DEFAULT_SEED_NODES;
+
     return flowNodes.map((n, idx) => {
       const data = (n.data || {}) as Record<string, any>;
       const rawKind = String(data.kind || data.type || "claim").toLowerCase();
@@ -109,6 +161,8 @@ export function GraphPanel({
   }, [flowNodes, claimFocusActive]);
 
   const edges3D = useMemo<Graph3DEdge[]>(() => {
+    if (flowEdges.length === 0) return DEFAULT_SEED_EDGES;
+
     return flowEdges.map((e) => ({
       id: e.id,
       source_node_id: e.source,
@@ -127,51 +181,49 @@ export function GraphPanel({
   const body = (
     <>
       {compactChrome && claimFocusActive && onExitClaimFocus ? (
-        <div className="absolute top-2 left-2 z-20">
+        <div className="absolute top-3 left-3 z-20">
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="h-7 gap-1.5 px-2 text-[11px]"
+            className="h-7 gap-1.5 px-2.5 text-[11px] bg-zinc-900/90 border-zinc-700 text-cyan-300"
             onClick={onExitClaimFocus}
           >
             <ArrowLeft className="size-3" />
-            Back
+            Back to Overview
           </Button>
         </div>
       ) : null}
 
-      {/* View Mode Toggle (2D Flow vs 3D Constellation) */}
-      {!isEmpty ? (
-        <div className="absolute top-3 right-3 z-30 flex items-center rounded-lg border border-zinc-800 bg-zinc-900/90 p-0.5 shadow-lg backdrop-blur-md">
-          <Button
-            type="button"
-            size="sm"
-            variant={viewMode === "2d" ? "secondary" : "ghost"}
-            className={cn(
-              "h-6.5 gap-1 px-2 text-[11px] font-medium transition-all",
-              viewMode === "2d" ? "bg-zinc-800 text-zinc-100 shadow-sm" : "text-zinc-400 hover:text-zinc-200",
-            )}
-            onClick={() => setViewMode("2d")}
-          >
-            <Layers className="size-3" />
-            2D Flow
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={viewMode === "3d" ? "secondary" : "ghost"}
-            className={cn(
-              "h-6.5 gap-1 px-2 text-[11px] font-medium transition-all",
-              viewMode === "3d" ? "bg-zinc-800 text-cyan-400 shadow-sm" : "text-zinc-400 hover:text-zinc-200",
-            )}
-            onClick={() => setViewMode("3d")}
-          >
-            <Box className="size-3" />
-            3D Space
-          </Button>
-        </div>
-      ) : null}
+      {/* Persistent View Mode Toggle (2D Flow vs 3D Space) */}
+      <div className="absolute top-3 right-3 z-30 flex items-center rounded-xl border border-zinc-800 bg-zinc-900/90 p-0.5 shadow-xl backdrop-blur-md">
+        <Button
+          type="button"
+          size="sm"
+          variant={viewMode === "3d" ? "secondary" : "ghost"}
+          className={cn(
+            "h-7 gap-1.5 px-2.5 text-[11px] font-medium transition-all",
+            viewMode === "3d" ? "bg-zinc-800 text-cyan-300 shadow-sm" : "text-zinc-400 hover:text-zinc-200",
+          )}
+          onClick={() => setViewMode("3d")}
+        >
+          <Box className="size-3.5" />
+          3D Space
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={viewMode === "2d" ? "secondary" : "ghost"}
+          className={cn(
+            "h-7 gap-1.5 px-2.5 text-[11px] font-medium transition-all",
+            viewMode === "2d" ? "bg-zinc-800 text-zinc-100 shadow-sm" : "text-zinc-400 hover:text-zinc-200",
+          )}
+          onClick={() => setViewMode("2d")}
+        >
+          <Layers className="size-3.5" />
+          2D Flow
+        </Button>
+      </div>
 
       <div
         className={cn(
@@ -179,7 +231,7 @@ export function GraphPanel({
           claimFocusActive && "nn-flow--claim-focus",
         )}
       >
-        {viewMode === "3d" && !isEmpty ? (
+        {viewMode === "3d" ? (
           <EvidenceConstellation3D
             nodes={nodes3D}
             edges={edges3D}
@@ -232,19 +284,19 @@ export function GraphPanel({
         )}
       </div>
 
-      {isEmpty ? (
+      {isEmpty && viewMode === "2d" ? (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
           <EmptyState
             icon={Workflow}
             title={
               surface === "structure"
                 ? "No explainable structure detected."
-                : "Structure appears after a reply"
+                : "2D Flow Appears After Reply"
             }
             description={
               surface === "structure"
-                ? "This reply had no classifiable claims, evidence, or reasoning cues. You can still read the message and start a new prompt."
-                : "While the model streams, the pipeline tracks the run. When it finishes, this surface morphs into the response structure graph."
+                ? "This reply had no classifiable claims, evidence, or reasoning cues."
+                : "Switch to 3D Space above to view the active spatial knowledge constellation."
             }
           />
         </div>

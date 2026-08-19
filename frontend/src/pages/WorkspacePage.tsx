@@ -1,9 +1,9 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo } from "react";
 import type { Node, NodeMouseHandler } from "@xyflow/react";
 
 import { ChatPanel } from "@/features/conversation";
-import { DemoLanding, StoryGuide } from "@/features/demo";
+import { StoryGuide } from "@/features/demo";
 import { ExplainabilityPanel } from "@/features/explainability";
 import { HistorySidebar } from "@/features/history";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -15,7 +15,6 @@ import {
   primaryAssertionId,
   resolveClaimFocus,
 } from "@/lib/claim-focus";
-import { getShowcasePrompt, type DemoPrompt } from "@/lib/demo-prompts";
 import { buildResponseStructureGraph, isStructureNodeData } from "@/lib/response-graph";
 import { buildRunGraph } from "@/lib/run-graph";
 import { primaryUnsupportedAssertionId } from "@/lib/unsupported-claims";
@@ -25,7 +24,7 @@ import { useUIStore } from "@/stores/ui-store";
 
 export function WorkspacePage() {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const showHistoryRail = useMediaQuery("(min-width: 1280px)");
+  const showHistoryRail = useMediaQuery("(min-width: 1360px)");
   const activePanel = useUIStore((state) => state.activePanel);
   const setActivePanel = useUIStore((state) => state.setActivePanel);
   const replayPhase = useUIStore((state) => state.replayPhase);
@@ -42,8 +41,6 @@ export function WorkspacePage() {
   const judgeModeActive = useUIStore((state) => state.judgeModeActive);
   const setStoryModeEnabled = useUIStore((state) => state.setStoryModeEnabled);
   const setStoryStep = useUIStore((state) => state.setStoryStep);
-  const bumpDemoRun = useUIStore((state) => state.bumpDemoRun);
-  const startJudgeShowcase = useUIStore((state) => state.startJudgeShowcase);
   const stopJudgeMode = useUIStore((state) => state.stopJudgeMode);
 
   const connection = useSessionStore((state) => state.connection);
@@ -72,9 +69,6 @@ export function WorkspacePage() {
   const setConversationMode = useConversationStore((state) => state.setConversationMode);
   const hydrateConversations = useConversationStore((state) => state.hydrate);
 
-  const demoLandingDismissed = useUIStore((state) => state.demoLandingDismissed);
-  const dismissDemoLanding = useUIStore((state) => state.dismissDemoLanding);
-
   useStoryOrchestration();
 
   useEffect(() => {
@@ -83,20 +77,9 @@ export function WorkspacePage() {
 
   const chatDisabled = connection !== "live" || isReplaying;
   const chatError =
-    lastError !== null
-      ? lastErrorCode
-        ? `${lastErrorCode}: ${lastError}`
-        : lastError
-      : null;
+    lastError !== null ? (lastErrorCode ? `${lastErrorCode}: ${lastError}` : lastError) : null;
 
   const claimFocusActive = focusedAssertionId !== null && !isReplaying;
-  const showDemoLanding =
-    messages.length === 0 &&
-    !isStreaming &&
-    phase === "idle" &&
-    !isReplaying &&
-    !judgeModeActive &&
-    !demoLandingDismissed;
 
   useEffect(() => {
     if (isStreaming && (isReplaying || replayPhase !== null)) {
@@ -257,38 +240,18 @@ export function WorkspacePage() {
     })();
   }, [ensureActiveConversation, retryLast]);
 
-  const launchPrompt = useCallback(
-    (prompt: DemoPrompt, judge: boolean) => {
-      if (judge) startJudgeShowcase();
-      else bumpDemoRun();
-      handleManualSend(prompt.prompt);
-    },
-    [bumpDemoRun, handleManualSend, startJudgeShowcase],
-  );
-
-  const onSelectPrompt = useCallback(
-    (prompt: DemoPrompt) => {
-      launchPrompt(prompt, false);
-    },
-    [launchPrompt],
-  );
-
-  const onRunShowcase = useCallback(() => {
-    launchPrompt(getShowcasePrompt(), true);
-  }, [launchPrompt]);
-
   const graphTitle = claimFocusActive
-    ? "Claim Focus"
+    ? "Claim Verification"
     : showingStructure
-      ? "Response Structure"
-      : "Live pipeline";
+      ? "Response Topology"
+      : "Live Pipeline";
   const graphDescription = claimFocusActive
-    ? "Assertion-centered explainability"
+    ? "Assertion & Evidence Linkage"
     : showingStructure
       ? structureGraph && structureGraph.nodes.length === 0
-        ? "No explainable structure detected"
-        : "Observable structural analysis"
-      : "Stage surface while streaming";
+        ? "Direct synthesis"
+        : "Observable semantic structure"
+      : "Stage execution stream";
 
   const viewKey = claimFocusActive
     ? `claim-focus-${focusedAssertionId}`
@@ -303,7 +266,7 @@ export function WorkspacePage() {
 
   const explainability = (
     <ExplainabilityPanel
-      className="h-full"
+      className="size-full"
       isStreaming={isStreaming}
       phase={phase}
       runMode={runMode}
@@ -331,7 +294,7 @@ export function WorkspacePage() {
     <ChatPanel
       active
       floating
-      className="h-full"
+      className="size-full"
       messages={messages}
       isStreaming={isStreaming}
       disabled={chatDisabled}
@@ -348,9 +311,7 @@ export function WorkspacePage() {
   );
 
   const storyGuide =
-    storyModeEnabled &&
-    !showDemoLanding &&
-    (judgeModeActive || storyStep !== null) ? (
+    storyModeEnabled && (judgeModeActive || storyStep !== null) ? (
       <StoryGuide
         activeStep={storyStep}
         judgeMode={judgeModeActive}
@@ -362,38 +323,24 @@ export function WorkspacePage() {
       />
     ) : null;
 
-  const demoLanding = (
-    <AnimatePresence>
-      {showDemoLanding ? (
-        <DemoLanding
-          key="demo-landing"
-          disabled={connection !== "live"}
-          onSelectPrompt={onSelectPrompt}
-          onRunShowcase={onRunShowcase}
-          onDismiss={dismissDemoLanding}
-        />
-      ) : null}
-    </AnimatePresence>
-  );
-
   if (!isDesktop) {
     return (
       <div className="relative flex h-full min-h-0 flex-col gap-2">
-        <div className="flex shrink-0 gap-1 rounded-full border border-border/50 bg-black/30 p-1">
+        <div className="flex shrink-0 gap-1 rounded-xl border border-zinc-800 bg-zinc-900/60 p-1">
           {(
             [
-              ["chat", "Chat"],
-              ["graph", "Explain"],
+              ["chat", "Studio"],
+              ["graph", "Cockpit"],
             ] as const
           ).map(([id, label]) => (
             <button
               key={id}
               type="button"
-              className={`flex-1 rounded-full px-3 py-1.5 text-xs transition ${
+              className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                 (id === "chat" && activePanel === "chat") ||
                 (id === "graph" && activePanel !== "chat")
-                  ? "bg-white/[0.08] text-foreground"
-                  : "text-muted-foreground"
+                  ? "bg-zinc-800 text-cyan-300 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-200"
               }`}
               onClick={() => {
                 setActivePanel(id === "chat" ? "chat" : "graph");
@@ -413,7 +360,6 @@ export function WorkspacePage() {
             >
               {chatPanel}
               {storyGuide}
-              {demoLanding}
             </motion.div>
           ) : (
             <motion.div
@@ -434,13 +380,14 @@ export function WorkspacePage() {
     <div className="relative flex h-full min-h-0 gap-3">
       {showHistoryRail ? <HistorySidebar compact className="shrink-0" /> : null}
 
-      <section className="relative min-h-0 min-w-0 flex-[1.35]">
+      {/* Main Conversational Studio */}
+      <section className="relative min-h-0 min-w-0 flex-[1.25]">
         {chatPanel}
         {storyGuide}
-        {demoLanding}
       </section>
 
-      <section className="relative min-h-0 w-[min(38%,440px)] shrink-0 xl:w-[min(36%,480px)]">
+      {/* Research & Evidence Cockpit */}
+      <section className="relative min-h-0 w-[min(46%,600px)] shrink-0 xl:w-[min(48%,660px)] 2xl:w-[min(50%,740px)]">
         {explainability}
       </section>
     </div>
