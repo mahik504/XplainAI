@@ -2,53 +2,54 @@
 @import "tw-animate-css";
 
 :root {
-  /* Design-system: Swiss Architectural Lamp-Black & Warm Amber */
+  /* Design-system: Deep Wine Glassmorphism & Cyber-Tactical Super-AI HUD */
   --radius: 0.75rem;
-  --glass-strength: 0.9;
+  --glass-strength: 0.95;
   --duration-fast: 120ms;
   --duration-normal: 250ms;
   --duration-slow: 400ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Lamp-black product surfaces */
-  --background: oklch(0.10 0.008 270);
-  --foreground: oklch(0.98 0.004 250);
+  /* Deep Wine Void & Frosted Glass Surfaces */
+  --background: oklch(0.08 0.015 350);
+  --foreground: oklch(0.98 0.005 350);
 
-  --card: oklch(0.13 0.012 270);
-  --card-foreground: oklch(0.98 0.004 250);
+  --card: oklch(0.12 0.025 350);
+  --card-foreground: oklch(0.98 0.005 350);
 
-  --popover: oklch(0.14 0.012 270);
-  --popover-foreground: oklch(0.98 0.004 250);
+  --popover: oklch(0.13 0.025 350);
+  --popover-foreground: oklch(0.98 0.005 350);
 
-  /* Primary Accent: Luminous Architectural Amber */
-  --primary: oklch(0.76 0.16 75);
-  --primary-foreground: oklch(0.12 0.02 75);
+  /* Primary Accent: Luminous Deep Wine / Cabernet Rose */
+  --primary: oklch(0.62 0.24 15);
+  --primary-foreground: oklch(0.98 0.005 350);
 
-  --secondary: oklch(0.18 0.015 270);
-  --secondary-foreground: oklch(0.98 0.004 250);
+  --secondary: oklch(0.16 0.025 350);
+  --secondary-foreground: oklch(0.98 0.005 350);
 
-  --muted: oklch(0.17 0.012 270);
-  --muted-foreground: oklch(0.65 0.015 250);
+  --muted: oklch(0.15 0.02 350);
+  --muted-foreground: oklch(0.70 0.02 350);
 
-  --accent: oklch(0.76 0.16 75);
-  --accent-foreground: oklch(0.12 0.02 75);
+  --accent: oklch(0.62 0.24 15);
+  --accent-foreground: oklch(0.98 0.005 350);
 
-  --destructive: oklch(0.65 0.22 25);
-  --destructive-foreground: oklch(0.98 0.01 25);
+  --destructive: oklch(0.65 0.24 25);
+  --destructive-foreground: oklch(0.98 0.005 25);
 
-  --border: oklch(1 0 0 / 7%);
-  --input: oklch(1 0 0 / 9%);
-  --ring: oklch(0.76 0.16 75 / 45%);
+  --border: oklch(0.62 0.24 15 / 20%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.62 0.24 15 / 45%);
 
+  --neon-rose: oklch(0.62 0.24 15);
   --neon-amber: oklch(0.76 0.16 75);
-  --neon-emerald: oklch(0.72 0.16 160);
+  --neon-emerald: oklch(0.72 0.17 160);
   --neon-cyan: oklch(0.74 0.14 210);
-  --neon-violet: oklch(0.65 0.16 280);
+  --neon-violet: oklch(0.65 0.18 290);
 
-  --glass-tint: oklch(0.12 0.01 270 / 55%);
-  --glass-border: oklch(1 0 0 / 7%);
-  --glass-highlight: oklch(1 0 0 / 4%);
-  --glass-blur: 24px;
+  --glass-tint: rgba(28, 10, 20, 0.65);
+  --glass-border: rgba(225, 29, 72, 0.22);
+  --glass-highlight: rgba(255, 255, 255, 0.06);
+  --glass-blur: 32px;
 }
 
 @theme inline {
@@ -82,6 +83,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-neon-rose: var(--neon-rose);
   --color-neon-amber: var(--neon-amber);
   --color-neon-emerald: var(--neon-emerald);
   --color-neon-cyan: var(--neon-cyan);

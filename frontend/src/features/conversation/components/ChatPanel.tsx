@@ -106,7 +106,7 @@ export function ChatPanel({
   isStreaming = false,
   disabled = false,
   error = null,
-  placeholder = "Ask a research question...",
+  placeholder = "Ask complex scientific, economic, or engineering research questions...",
   responseAnalysis = null,
   runMode = "balanced",
   onRunModeChange,
@@ -189,37 +189,37 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-800/80 bg-[#08080A]/90 shadow-2xl backdrop-blur-2xl",
+        "relative flex h-full flex-col overflow-hidden rounded-2xl border border-rose-950/70 bg-[#070407]/90 shadow-2xl backdrop-blur-2xl",
         className,
       )}
     >
-      {/* Studio Header */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-800/70 px-4 bg-zinc-900/30">
+      {/* Studio Tactical Header */}
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-rose-950/70 px-4 bg-[#12050E]/50">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400">
+          <div className="flex size-7 items-center justify-center rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-400">
             <MessagesSquare className="size-3.5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold tracking-tight text-zinc-100 font-display">
-                Research Studio
+                Tactical Research Studio
               </span>
               <span className="inline-block size-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
             </div>
-            <p className="text-[10px] font-mono text-zinc-500">Observable Synthesis ? Multi-Source Grounding</p>
+            <p className="text-[10px] font-mono text-rose-300/60">Observable Synthesis ? Multi-Source Grounding</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {isStreaming ? (
-            <Badge variant="amber" className="animate-pulse text-[11px] gap-1 px-2 py-0.5 font-mono">
-              <span className="size-1.5 rounded-full bg-amber-400" />
-              Synthesizing...
+            <Badge variant="amber" className="animate-pulse text-[11px] gap-1 px-2 py-0.5 font-mono border-rose-500/30 bg-rose-500/15 text-rose-300">
+              <span className="size-1.5 rounded-full bg-rose-400 shadow-[0_0_6px_#e11d48]" />
+              Synthesizing Evidence...
             </Badge>
           ) : sourcesLinked > 0 ? (
             <Badge variant="emerald" className="text-[11px] gap-1 px-2 py-0.5 font-mono">
               <BookOpen className="size-3" />
-              {sourcesLinked} Sources Grounded
+              {sourcesLinked} Grounded Citations
             </Badge>
           ) : null}
         </div>
@@ -231,26 +231,26 @@ export function ChatPanel({
           <div className="flex h-full flex-col justify-between overflow-y-auto px-6 py-8">
             <div className="mx-auto max-w-2xl space-y-6 pt-4">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-mono font-medium tracking-wide text-amber-300">
+                <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/10 px-3.5 py-1 text-[11px] font-mono font-medium tracking-wide text-rose-300 shadow-[0_0_15px_rgba(225,29,72,0.15)]">
                   <Sparkles className="size-3" />
-                  XPLAINAI RESEARCH ENGINE 2.0
+                  XPLAINAI 3.0 ? SUPER-AGENTIC RESEARCH OS
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-100 font-display">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-100 font-display leading-tight">
                   Observable reasoning. <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-300 to-amber-200">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-300 to-amber-200">
                     Empirical evidence.
                   </span>
                 </h1>
                 <p className="text-sm leading-relaxed text-zinc-400 max-w-xl">
                   Ask deep scientific, engineering, or conceptual questions. XplainAI retrieves verified
-                  academic papers & web evidence, identifies testable assertions, and maps the complete
-                  knowledge topology in 3D.
+                  academic preprints & web evidence, extracts testable assertions, and maps the complete
+                  knowledge topology in 3D ? with zero fabricated reasoning.
                 </p>
               </div>
 
               {/* Curated Research Prompt Bento */}
               <div className="space-y-2.5 pt-2">
-                <div className="text-[11px] font-mono tracking-widest text-zinc-500 uppercase">
+                <div className="text-[11px] font-mono tracking-widest text-rose-300/60 uppercase">
                   Select a research vector
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -264,19 +264,19 @@ export function ChatPanel({
                         onClick={() => {
                           onSend?.(p.prompt);
                         }}
-                        className="group flex flex-col items-start rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/50 hover:bg-zinc-900/80 hover:shadow-lg active:scale-[0.98]"
+                        className="group flex flex-col items-start rounded-xl border border-rose-950/80 bg-[#12050E]/50 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-rose-500/50 hover:bg-[#180814]/80 hover:shadow-[0_8px_25px_rgba(225,29,72,0.15)] active:scale-[0.98]"
                       >
                         <div className="flex w-full items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700/60 bg-zinc-800/60 px-2 py-0.5 text-[10px] font-medium text-zinc-300 font-mono">
-                            <Icon className="size-3 text-amber-400" />
+                          <span className="inline-flex items-center gap-1.5 rounded-md border border-rose-900/50 bg-[#1e0717]/80 px-2 py-0.5 text-[10px] font-medium text-rose-300 font-mono">
+                            <Icon className="size-3 text-rose-400" />
                             {p.tag}
                           </span>
-                          <ArrowUp className="size-3.5 text-zinc-600 transition-colors group-hover:text-amber-400 group-hover:rotate-45" />
+                          <ArrowUp className="size-3.5 text-zinc-600 transition-colors group-hover:text-rose-400 group-hover:rotate-45" />
                         </div>
-                        <h4 className="mt-2 text-xs font-semibold text-zinc-200 group-hover:text-amber-300 font-display">
+                        <h4 className="mt-2 text-xs font-semibold text-zinc-200 group-hover:text-rose-200 font-display">
                           {p.title}
                         </h4>
-                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-zinc-500">
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-zinc-400">
                           {p.prompt}
                         </p>
                       </button>
@@ -288,17 +288,17 @@ export function ChatPanel({
 
             {/* Active Research Pipeline Tools Pill */}
             <div className="mx-auto flex flex-wrap items-center justify-center gap-3 pt-6 text-[11px] text-zinc-500">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">Active Tool Mesh:</span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-rose-400/80 font-semibold">Active Research Mesh:</span>
+              <span className="rounded-md border border-rose-950/80 bg-[#140610]/80 px-2.5 py-0.5 text-zinc-300 font-mono text-[10px]">
                 ArXiv Preprints
               </span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">
+              <span className="rounded-md border border-rose-950/80 bg-[#140610]/80 px-2.5 py-0.5 text-zinc-300 font-mono text-[10px]">
                 Wikipedia API
               </span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">
+              <span className="rounded-md border border-rose-950/80 bg-[#140610]/80 px-2.5 py-0.5 text-zinc-300 font-mono text-[10px]">
                 DuckDuckGo Search
               </span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">
+              <span className="rounded-md border border-rose-950/80 bg-[#140610]/80 px-2.5 py-0.5 text-zinc-300 font-mono text-[10px]">
                 AST Calculator
               </span>
             </div>
@@ -340,10 +340,10 @@ export function ChatPanel({
                         className={cn(
                           "max-w-[min(44rem,94%)] rounded-2xl px-4 py-3 text-sm leading-relaxed",
                           message.role === "user"
-                            ? "border border-zinc-700/60 bg-zinc-900/90 text-zinc-100 shadow-md font-medium"
-                            : "border border-zinc-800/80 bg-zinc-900/40 text-zinc-200",
+                            ? "border border-rose-900/50 bg-[#190615]/90 text-zinc-100 shadow-md font-medium"
+                            : "border border-rose-950/70 bg-[#11040D]/60 text-zinc-200",
                           message.role === "system" && "border-dashed text-zinc-400 italic text-xs",
-                          showCaret && "border-amber-500/40",
+                          showCaret && "border-rose-500/40",
                         )}
                       >
                         {message.role === "user" || message.role === "system" ? (
@@ -392,8 +392,8 @@ export function ChatPanel({
         )}
       </div>
 
-      {/* Tactile Composer Bar */}
-      <div className="shrink-0 border-t border-zinc-800/80 bg-zinc-900/50 p-3 backdrop-blur-xl">
+      {/* Tactile Frosted Wine Composer Bar */}
+      <div className="shrink-0 border-t border-rose-950/70 bg-[#0F040C]/70 p-3 backdrop-blur-xl">
         {error ? (
           <p
             role="alert"
@@ -409,11 +409,11 @@ export function ChatPanel({
             submit();
           }}
           className={cn(
-            "relative rounded-xl border bg-zinc-950/80 p-2.5 shadow-inner transition-all duration-200",
-            "focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/30",
+            "relative rounded-xl border bg-[#080206]/90 p-2.5 shadow-inner transition-all duration-200",
+            "focus-within:border-rose-500/50 focus-within:ring-1 focus-within:ring-rose-500/30",
             evidenceDemandHighlight
               ? "border-amber-500/60 ring-1 ring-amber-500/30"
-              : "border-zinc-800/90",
+              : "border-rose-950/80",
           )}
         >
           <textarea
@@ -430,7 +430,7 @@ export function ChatPanel({
             className="scrollbar-slim max-h-36 min-h-[3rem] w-full resize-none overflow-y-auto rounded-lg border-0 bg-transparent px-2 py-1 text-sm leading-relaxed text-zinc-100 placeholder:text-zinc-500 focus:outline-none disabled:opacity-40"
           />
 
-          <div className="mt-2 flex items-center justify-between gap-2 border-t border-zinc-800/40 pt-2 px-1">
+          <div className="mt-2 flex items-center justify-between gap-2 border-t border-rose-950/40 pt-2 px-1">
             <div className="flex items-center gap-2">
               {onRunModeChange ? (
                 <ModeSelector
@@ -443,7 +443,7 @@ export function ChatPanel({
 
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline-block font-mono text-[10px] text-zinc-500">
-                ? Send ? Shift+? Newline
+                ? Synthesize ? Shift+? Newline
               </span>
               {isStreaming && onStop ? (
                 <Button
@@ -461,7 +461,7 @@ export function ChatPanel({
                   type="submit"
                   size="sm"
                   disabled={!canSend}
-                  className="h-8 gap-1.5 px-3.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95 transition-all"
+                  className="h-8 gap-1.5 px-4 text-xs font-semibold bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-[0_0_18px_rgba(225,29,72,0.45)] active:scale-95 transition-all"
                 >
                   <span>Synthesize</span>
                   <ArrowUp className="size-3.5" />

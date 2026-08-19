@@ -72,12 +72,12 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
   }, [brandOpen, detailsOpen]);
 
   return (
-    <header className="relative z-30 shrink-0 border-b border-border/40 bg-[#0A0A0F]/70 px-3 py-2.5 backdrop-blur-xl sm:px-4">
+    <header className="relative z-30 shrink-0 border-b border-rose-950/60 bg-[#0B0409]/80 px-3 py-2.5 backdrop-blur-2xl sm:px-4">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="icon-sm"
-          className="xl:hidden"
+          className="xl:hidden text-zinc-400 hover:text-zinc-100"
           onClick={() => {
             setMobileNavOpen(true);
           }}
@@ -96,22 +96,22 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
             aria-haspopup="menu"
             aria-expanded={brandOpen}
           >
-            <XplainAiLogo size={30} className="group-hover:drop-shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
+            <XplainAiLogo size={32} className="group-hover:drop-shadow-[0_0_14px_rgba(225,29,72,0.6)]" />
             <span className="text-left">
               <span className="block font-display text-[15px] font-semibold tracking-tight text-foreground">
                 XplainAI
               </span>
-              <span className="hidden text-[11px] font-mono text-muted-foreground sm:block">
-                Research Studio 2.0
+              <span className="hidden text-[10px] font-mono tracking-wider text-rose-300/80 sm:block uppercase">
+                Autonomous Research OS
               </span>
             </span>
             <span
               className={cn(
                 "ml-1 size-1.5 rounded-full",
                 link === "live"
-                  ? "bg-neon-emerald shadow-[0_0_8px_var(--neon-emerald)]"
+                  ? "bg-emerald-500 shadow-[0_0_8px_#10b981]"
                   : link === "connecting"
-                    ? "bg-neon-amber"
+                    ? "bg-amber-500"
                     : "bg-muted-foreground/50",
               )}
               title={link}
@@ -121,7 +121,7 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
           {brandOpen ? (
             <div
               role="menu"
-              className="absolute top-full left-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border/60 bg-[#12121A]/96 py-1 shadow-[0_20px_48px_-28px_oklch(0_0_0_/_80%)] backdrop-blur-xl"
+              className="absolute top-full left-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-rose-900/40 bg-[#130610]/95 py-1 shadow-[0_20px_48px_-28px_rgba(0,0,0,0.9)] backdrop-blur-2xl"
             >
               <button
                 type="button"

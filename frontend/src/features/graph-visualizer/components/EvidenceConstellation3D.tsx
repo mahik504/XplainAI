@@ -35,12 +35,12 @@ interface EvidenceConstellation3DProps {
 }
 
 const TYPE_PALETTE: Record<string, { hex: number; css: string; label: string }> = {
-  claim: { hex: 0xf59e0b, css: "#F59E0B", label: "Assertion" },
+  claim: { hex: 0xe11d48, css: "#E11D48", label: "Assertion" },
   evidence: { hex: 0x10b981, css: "#10B981", label: "Evidence" },
   source: { hex: 0x38bdf8, css: "#38BDF8", label: "Source" },
   inference: { hex: 0x818cf8, css: "#818CF8", label: "Inference" },
-  assumption: { hex: 0xf43f5e, css: "#F43F5E", label: "Assumption" },
-  conclusion: { hex: 0xe26d5c, css: "#E26D5C", label: "Conclusion" },
+  assumption: { hex: 0xf59e0b, css: "#F59E0B", label: "Assumption" },
+  conclusion: { hex: 0xec4899, css: "#EC4899", label: "Conclusion" },
 };
 
 export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = ({
@@ -74,20 +74,20 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     const width = container.clientWidth || 600;
     const height = container.clientHeight || 400;
 
-    // 1. Scene & Deep Atmospheric Fog
+    // 1. Scene & Deep Wine Atmospheric Fog
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x08080a, 0.0035);
+    scene.fog = new THREE.FogExp2(0x070407, 0.0035);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 1000);
     camera.position.set(0, 35, 175);
     cameraRef.current = camera;
 
-    // 2. High-Fidelity WebGL Renderer
+    // 2. High-Performance WebGL Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x08080a, 1);
+    renderer.setClearColor(0x070407, 1);
     container.replaceChildren(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -99,19 +99,19 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     controls.minDistance = 25;
     controlsRef.current = controls;
 
-    // 4. Calibrated Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xf4f4f0, 0.85);
+    // 4. Calibrated Deep Wine & Jade Lighting Rig
+    const ambientLight = new THREE.AmbientLight(0xf9f9fb, 0.85);
     scene.add(ambientLight);
 
-    const amberKeyLight = new THREE.PointLight(0xf59e0b, 2.5, 350);
-    amberKeyLight.position.set(20, 60, 60);
-    scene.add(amberKeyLight);
+    const wineKeyLight = new THREE.PointLight(0xe11d48, 3.0, 380);
+    wineKeyLight.position.set(20, 60, 60);
+    scene.add(wineKeyLight);
 
-    const jadeRimLight = new THREE.PointLight(0x10b981, 1.8, 300);
+    const jadeRimLight = new THREE.PointLight(0x10b981, 2.0, 320);
     jadeRimLight.position.set(-60, -30, 40);
     scene.add(jadeRimLight);
 
-    // 5. Multi-Layer Cosmic Dust Particles
+    // 5. Multi-Layer Cosmic Particles
     const starCount = 450;
     const starGeo = new THREE.BufferGeometry();
     const starPos = new Float32Array(starCount * 3);
@@ -122,7 +122,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     }
     starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
     const starMat = new THREE.PointsMaterial({
-      color: 0x71717a,
+      color: 0xa1a1aa,
       size: 1.4,
       transparent: true,
       opacity: 0.45,
@@ -150,7 +150,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       const nodePos = new THREE.Vector3(x, y, z);
       nodePosMap.set(n.id, nodePos);
 
-      const colorData = TYPE_PALETTE[n.type] ?? { hex: 0xf59e0b, css: "#F59E0B", label: "Assertion" };
+      const colorData = TYPE_PALETTE[n.type] ?? { hex: 0xe11d48, css: "#E11D48", label: "Assertion" };
       const isFocused = activeNodeId === n.id;
       const radiusSize = n.type === "claim" ? 5.2 : n.type === "source" ? 4.4 : 3.6;
 
@@ -160,7 +160,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
         roughness: 0.2,
         metalness: 0.4,
         emissive: colorData.hex,
-        emissiveIntensity: isFocused ? 0.9 : 0.3,
+        emissiveIntensity: isFocused ? 0.95 : 0.35,
       });
 
       const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
@@ -176,7 +176,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
           color: colorData.hex,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: isFocused ? 0.8 : 0.45,
+          opacity: isFocused ? 0.85 : 0.5,
         });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
         ringMesh.position.copy(nodePos);
@@ -203,23 +203,23 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
 
       const isConflict = e.type === "contradicts";
-      const edgeColor = isConflict ? 0xf43f5e : 0x52525b;
+      const edgeColor = isConflict ? 0xff2e63 : 0x881337;
 
       const lineMat = new THREE.LineBasicMaterial({
         color: edgeColor,
         transparent: true,
-        opacity: isConflict ? 0.9 : 0.45,
+        opacity: isConflict ? 0.95 : 0.55,
       });
 
       const line = new THREE.Line(lineGeo, lineMat);
       scene.add(line);
 
       // Light particle travelling along curve
-      const pGeo = new THREE.SphereGeometry(1.0, 12, 12);
+      const pGeo = new THREE.SphereGeometry(1.1, 12, 12);
       const pMat = new THREE.MeshBasicMaterial({
-        color: isConflict ? 0xf43f5e : 0xf59e0b,
+        color: isConflict ? 0xff2e63 : 0xe11d48,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.95,
       });
       const pMesh = new THREE.Mesh(pGeo, pMat);
       scene.add(pMesh);
@@ -277,7 +277,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     });
     resizeObserver.observe(container);
 
-    // 10. Animation Loop with Dynamic Particles
+    // 10. Animation Loop with Dynamic Laser Pulses
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -305,16 +305,16 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
   }, [nodes, edges, activeNodeId, onNodeClick]);
 
   return (
-    <div className={cn("relative size-full overflow-hidden select-none bg-[#08080A]", className)}>
+    <div className={cn("relative size-full overflow-hidden select-none bg-[#070407]", className)}>
       <div ref={containerRef} className="size-full" />
 
       {/* Floating 3D Telemetry HUD Controls */}
-      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1 rounded-xl border border-zinc-800/90 bg-zinc-900/85 p-1 backdrop-blur-xl shadow-2xl">
+      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1 rounded-xl border border-rose-950/80 bg-[#12050E]/85 p-1 backdrop-blur-xl shadow-2xl">
         <Button
           type="button"
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0 text-zinc-400 hover:text-amber-400 transition active:scale-95"
+          className="h-7 w-7 p-0 text-zinc-400 hover:text-rose-400 transition active:scale-95"
           onClick={resetCamera}
           title="Reset 3D Space Orbit"
         >
@@ -325,23 +325,23 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       {/* Active Raycast HUD Card */}
       {hoveredNode && hudPos ? (
         <div
-          className="pointer-events-none absolute z-30 flex max-w-xs -translate-x-1/2 -translate-y-full flex-col gap-1.5 rounded-2xl border border-zinc-700/80 bg-zinc-950/95 p-3 text-xs text-zinc-200 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+          className="pointer-events-none absolute z-30 flex max-w-xs -translate-x-1/2 -translate-y-full flex-col gap-1.5 rounded-2xl border border-rose-900/80 bg-[#0E040B]/95 p-3 text-xs text-zinc-200 shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl"
           style={{ left: hudPos.x, top: hudPos.y - 14 }}
         >
           <div className="flex items-center justify-between gap-2">
             <span
               className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider font-semibold"
-              style={{ color: TYPE_PALETTE[hoveredNode.type]?.css || "#F59E0B" }}
+              style={{ color: TYPE_PALETTE[hoveredNode.type]?.css || "#E11D48" }}
             >
               <span
                 className="size-2 rounded-full shadow-[0_0_8px_currentColor]"
-                style={{ backgroundColor: TYPE_PALETTE[hoveredNode.type]?.css || "#F59E0B" }}
+                style={{ backgroundColor: TYPE_PALETTE[hoveredNode.type]?.css || "#E11D48" }}
               />
               {TYPE_PALETTE[hoveredNode.type]?.label || hoveredNode.type}
             </span>
 
             {hoveredNode.status ? (
-              <Badge variant="amber" className="text-[9px] font-mono px-1.5 py-0 uppercase">
+              <Badge variant="amber" className="text-[9px] font-mono px-1.5 py-0 uppercase border-rose-500/30 bg-rose-500/20 text-rose-300">
                 {hoveredNode.status}
               </Badge>
             ) : null}

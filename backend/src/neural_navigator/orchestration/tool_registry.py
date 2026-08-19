@@ -29,6 +29,31 @@ _PROMPT_INJECTION_RE = re.compile(
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
+import ipaddress
+import urllib.parse
+
+def is_safe_external_url(url: str) -> bool:
+    """Verifies that an outbound URL does not target localhost, private subnets, or metadata endpoints."""
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        if hostname.lower() in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "instance-data"):
+            return False
+        try:
+            ip = ipaddress.ip_address(hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local:
+                return False
+        except ValueError:
+            pass
+        return True
+    except Exception:
+        return False
+
+
 def sanitize_untrusted_content(text: str, max_chars: int = 2000) -> str:
     """Sanitizes external web content to prevent prompt injections and format breaks."""
     cleaned = _HTML_TAG_RE.sub(" ", text)
