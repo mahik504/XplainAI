@@ -38,7 +38,7 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
   const hasAnalysis = totalClaims > 0 || totalSources > 0;
 
   return (
-    <header className="relative z-30 flex h-12 shrink-0 items-center justify-between border-b border-border/40 bg-[#09090b]/90 px-3 backdrop-blur-md sm:px-4">
+    <header className="relative z-30 flex h-12 shrink-0 items-center justify-between border-b border-rose-950/60 bg-[#060408]/95 px-3 backdrop-blur-xl sm:px-4">
       {/* Left section: Sidebar toggle & Logo */}
       <div className="flex items-center gap-2.5">
         <button
@@ -50,7 +50,7 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
               toggleSidebar();
             }
           }}
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground"
+          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-rose-950/40 hover:text-rose-300"
           title="Toggle sidebar (Ctrl+B)"
           aria-label="Toggle sidebar"
         >
@@ -60,19 +60,19 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
         <button
           type="button"
           onClick={() => void newChat()}
-          className="group flex items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-white/[0.04]"
+          className="group flex items-center gap-2 rounded-lg px-1.5 py-1 text-left transition hover:bg-rose-950/30"
         >
           <XplainAiLogo size={24} />
-          <span className="font-display text-sm font-semibold tracking-tight text-foreground">
+          <span className="font-display text-sm font-semibold tracking-tight text-foreground group-hover:text-rose-200">
             XplainAI
           </span>
           <span
             className={cn(
               "size-1.5 rounded-full",
               link === "live"
-                ? "bg-emerald-500"
+                ? "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
                 : link === "connecting"
-                  ? "bg-amber-500 animate-pulse"
+                  ? "bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]"
                   : "bg-zinc-600",
             )}
             title={`Connection: ${link}`}
@@ -82,7 +82,9 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
 
       {/* Center: Conversation Title */}
       <div className="hidden max-w-sm truncate text-center md:block">
-        <span className="text-xs font-medium text-muted-foreground/80">{conversationTitle}</span>
+        <span className="text-xs font-medium text-muted-foreground/80 font-mono tracking-wide">
+          {conversationTitle}
+        </span>
       </div>
 
       {/* Right section: Model selector, Inspector toggle, Settings */}
@@ -92,16 +94,16 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
             type="button"
             onClick={toggleInspector}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition",
+              "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs transition font-mono",
               inspectorOpen
-                ? "border-primary/50 bg-primary/10 text-primary"
-                : "border-border/60 bg-white/[0.02] text-muted-foreground hover:border-border hover:bg-white/[0.05] hover:text-foreground",
+                ? "border-rose-500/60 bg-rose-500/15 text-rose-300 shadow-[0_0_12px_rgba(225,29,72,0.3)]"
+                : "border-border/60 bg-rose-950/20 text-rose-300/80 hover:border-rose-500/40 hover:bg-rose-950/40 hover:text-rose-200",
             )}
             title="Inspect Claims & 3D Knowledge Graph"
           >
-            <Eye className="size-3.5" />
-            <span className="hidden sm:inline">Analysis</span>
-            <span className="rounded-full bg-white/[0.08] px-1.5 py-0.2 text-[10px] font-mono">
+            <Eye className="size-3.5 text-rose-400" />
+            <span>Analysis</span>
+            <span className="rounded-full bg-rose-500/20 px-1.5 py-0.2 text-[10px] text-rose-300 border border-rose-500/30">
               {totalSources > 0 ? `${totalSources} sources` : `${totalClaims} claims`}
             </span>
           </button>
@@ -112,15 +114,13 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="size-8 rounded-lg text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
+          className="size-8 text-muted-foreground hover:bg-rose-950/40 hover:text-rose-200"
           onClick={() => setSettingsOpen(true)}
-          title="Settings"
+          aria-label="Open settings"
         >
           <Settings className="size-4" />
-          <span className="sr-only">Open settings</span>
         </Button>
       </div>
     </header>
   );
 }
-

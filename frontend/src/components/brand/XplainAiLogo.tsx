@@ -20,20 +20,38 @@ export function XplainAiLogo({ className, size = 28 }: XplainAiLogoProps) {
       className={cn("shrink-0 transition-transform duration-200 hover:scale-105", className)}
       aria-hidden
     >
-      <rect width="32" height="32" rx="8" fill="#18181B" stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1" />
+      <defs>
+        <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FF2E63" stopOpacity="1" />
+          <stop offset="60%" stopColor="#E11D48" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#881337" stopOpacity="0.2" />
+        </radialGradient>
+        <filter id="neonPulse" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      <rect width="32" height="32" rx="8" fill="#12040F" stroke="rgba(225, 29, 72, 0.4)" strokeWidth="1" />
       
-      {/* Precision Node Network */}
-      <circle cx="10" cy="10" r="2.5" fill="#3B82F6" />
-      <circle cx="22" cy="10" r="2" fill="#71717A" />
-      <circle cx="16" cy="16" r="3" fill="#FAFAFA" />
-      <circle cx="10" cy="22" r="2" fill="#71717A" />
-      <circle cx="22" cy="22" r="2.5" fill="#34D399" />
+      {/* Outer Holographic Circuit Lines */}
+      <circle cx="16" cy="16" r="11" stroke="rgba(225, 29, 72, 0.2)" strokeDasharray="3 3" strokeWidth="0.8" />
       
       {/* Evidence Vectors */}
-      <line x1="10" y1="10" x2="16" y2="16" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.8" />
-      <line x1="22" y1="10" x2="16" y2="16" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="1.2" strokeLinecap="round" />
-      <line x1="10" y1="22" x2="16" y2="16" stroke="rgba(255, 255, 255, 0.3)" strokeWidth="1.2" strokeLinecap="round" />
-      <line x1="22" y1="22" x2="16" y2="16" stroke="#34D399" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.8" />
+      <line x1="8" y1="8" x2="16" y2="16" stroke="#06B6D4" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.85" />
+      <line x1="24" y1="8" x2="16" y2="16" stroke="#FF2E63" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.85" />
+      <line x1="8" y1="24" x2="16" y2="16" stroke="#10B981" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.85" />
+      <line x1="24" y1="24" x2="16" y2="16" stroke="#8B5CF6" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.85" />
+
+      {/* Peripheral Quantum Nodes */}
+      <circle cx="8" cy="8" r="2.2" fill="#06B6D4" filter="url(#neonPulse)" />
+      <circle cx="24" cy="8" r="2.2" fill="#FF2E63" filter="url(#neonPulse)" />
+      <circle cx="8" cy="24" r="2.2" fill="#10B981" filter="url(#neonPulse)" />
+      <circle cx="24" cy="24" r="2.2" fill="#8B5CF6" filter="url(#neonPulse)" />
+
+      {/* Central Luminous Core */}
+      <circle cx="16" cy="16" r="3.5" fill="url(#coreGlow)" filter="url(#neonPulse)" />
+      <circle cx="16" cy="16" r="1.5" fill="#FFFFFF" />
     </svg>
   );
 }

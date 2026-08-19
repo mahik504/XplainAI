@@ -90,29 +90,31 @@ export function ModelSelector({ className }: { className?: string }) {
           setOpen((value) => !value);
         }}
         className={cn(
-          "inline-flex items-center gap-2 rounded-lg border border-border/60 bg-white/[0.03] px-2.5 py-1.5 text-left text-xs transition",
-          "hover:border-primary/40 hover:bg-white/[0.06]",
-          "focus-visible:ring-1 focus-visible:ring-primary focus-visible:outline-none",
+          "inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs font-mono transition",
+          open
+            ? "border-rose-500/60 bg-rose-500/15 text-rose-200 shadow-[0_0_12px_rgba(225,29,72,0.2)]"
+            : "border-rose-950/70 bg-[#12040f]/80 text-zinc-300 hover:border-rose-500/40 hover:bg-rose-950/30 hover:text-rose-200",
+          "focus-visible:ring-1 focus-visible:ring-rose-500 focus-visible:outline-none",
           "disabled:cursor-not-allowed disabled:opacity-50",
         )}
       >
-        <span className="flex size-2 rounded-full bg-primary" />
-        <span className="min-w-0 truncate font-medium text-foreground">{selected.label}</span>
-        <ChevronDown className="size-3 shrink-0 text-muted-foreground" aria-hidden />
+        <span className="flex size-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.9)]" />
+        <span className="min-w-0 truncate font-semibold text-foreground">{selected.label}</span>
+        <ChevronDown className={cn("size-3 shrink-0 text-zinc-400 transition", open && "rotate-180")} aria-hidden />
       </button>
 
       {open ? (
         <div
           role="listbox"
           aria-label="Select Intelligence Model"
-          className="absolute top-full right-0 z-50 mt-1.5 w-[19rem] overflow-hidden rounded-xl border border-border/80 bg-[#161619] shadow-2xl"
+          className="absolute top-full right-0 z-50 mt-1.5 w-[19rem] overflow-hidden rounded-xl border border-rose-950/90 bg-[#120510]/95 shadow-2xl backdrop-blur-2xl font-mono"
         >
           <div className="max-h-80 overflow-y-auto p-1.5 scrollbar-slim">
             {Object.entries(groupedModels).map(([providerName, models]) => {
               if (models.length === 0) return null;
               return (
                 <div key={providerName} className="mb-2 last:mb-0">
-                  <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
+                  <div className="px-2 py-1 text-[10px] font-semibold tracking-wider text-zinc-500 uppercase">
                     {providerName}
                   </div>
                   <div className="space-y-0.5">
@@ -127,8 +129,8 @@ export function ModelSelector({ className }: { className?: string }) {
                           className={cn(
                             "flex w-full items-start justify-between rounded-lg px-2.5 py-2 text-left transition-colors",
                             active
-                              ? "bg-white/[0.08] text-foreground"
-                              : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+                              ? "bg-rose-500/20 text-rose-100 border border-rose-500/30"
+                              : "text-zinc-400 hover:bg-rose-950/30 hover:text-rose-200",
                           )}
                           onClick={() => {
                             setActiveModel(model.id);
@@ -137,22 +139,22 @@ export function ModelSelector({ className }: { className?: string }) {
                         >
                           <div className="min-w-0 pr-2">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-medium text-foreground">{model.label}</span>
+                              <span className="text-xs font-semibold text-foreground">{model.label}</span>
                               {model.tier === "fast" ? (
-                                <span className="rounded bg-emerald-500/10 px-1 py-0.2 text-[9px] font-medium text-emerald-400">
+                                <span className="rounded bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.2 text-[9px] font-medium text-emerald-300">
                                   Fast
                                 </span>
                               ) : model.tier === "advanced" ? (
-                                <span className="rounded bg-blue-500/10 px-1 py-0.2 text-[9px] font-medium text-blue-400">
+                                <span className="rounded bg-rose-500/15 border border-rose-500/30 px-1 py-0.2 text-[9px] font-medium text-rose-300">
                                   Reasoning
                                 </span>
                               ) : null}
                             </div>
-                            <p className="mt-0.5 truncate text-[11px] text-muted-foreground/80">
+                            <p className="mt-0.5 truncate text-[11px] text-zinc-400 font-sans">
                               {model.description}
                             </p>
                           </div>
-                          {active ? <Check className="mt-0.5 size-3.5 shrink-0 text-primary" /> : null}
+                          {active ? <Check className="mt-0.5 size-3.5 shrink-0 text-rose-400" /> : null}
                         </button>
                       );
                     })}
@@ -162,16 +164,16 @@ export function ModelSelector({ className }: { className?: string }) {
             })}
           </div>
 
-          <div className="border-t border-border/40 p-1.5">
+          <div className="border-t border-rose-950/60 p-1.5">
             <button
               type="button"
-              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground"
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-zinc-400 transition hover:bg-rose-950/40 hover:text-rose-200"
               onClick={() => {
                 setOpen(false);
                 setSettingsOpen(true);
               }}
             >
-              <Sliders className="size-3.5 text-primary" />
+              <Sliders className="size-3.5 text-rose-400" />
               <span>Custom Model & API Keys…</span>
             </button>
           </div>

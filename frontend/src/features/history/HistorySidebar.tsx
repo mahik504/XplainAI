@@ -131,7 +131,7 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
   return (
     <aside
       className={cn(
-        "flex h-full min-h-0 flex-col bg-[#0f0f11] border-r border-border/40 transition-all duration-200",
+        "flex h-full min-h-0 flex-col bg-[#070308] border-r border-rose-950/70 transition-all duration-200",
         compact ? "w-[240px]" : "w-[260px]",
         className,
       )}
@@ -142,7 +142,7 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
           type="button"
           size="sm"
           variant="outline"
-          className="h-9 flex-1 justify-start gap-2 rounded-lg border-border/60 bg-white/[0.02] text-xs font-medium text-foreground hover:bg-white/[0.06] hover:text-white"
+          className="h-9 flex-1 justify-start gap-2 rounded-lg border-rose-500/40 bg-rose-500/10 text-xs font-mono text-rose-200 hover:bg-rose-500/20 hover:border-rose-500/60 hover:text-white"
           disabled={loading}
           onClick={() => {
             void newChat().then(() => {
@@ -150,13 +150,13 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
             });
           }}
         >
-          <Plus className="size-4 text-primary" />
+          <Plus className="size-4 text-rose-400" />
           <span>New inquiry</span>
         </Button>
         <button
           type="button"
           onClick={toggleSidebar}
-          className="flex size-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground"
+          className="flex size-9 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-950/40 hover:text-rose-200"
           title="Toggle sidebar (Ctrl+B)"
           aria-label="Toggle sidebar"
         >
@@ -168,19 +168,19 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
       {conversations.length > 4 ? (
         <div className="px-3 py-1.5">
           <div className="relative flex items-center">
-            <Search className="absolute left-2.5 size-3.5 text-muted-foreground" />
+            <Search className="absolute left-2.5 size-3.5 text-zinc-500" />
             <input
               type="text"
               placeholder="Search history…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 w-full rounded-md border border-border/40 bg-black/20 pl-8 pr-2 text-xs text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/50"
+              className="h-8 w-full rounded-md border border-rose-950/70 bg-black/40 pl-8 pr-2 text-xs font-mono text-foreground placeholder:text-zinc-500 outline-none focus:border-rose-500/60"
             />
             {searchQuery ? (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 text-muted-foreground hover:text-foreground"
+                className="absolute right-2 text-zinc-500 hover:text-rose-200"
               >
                 <X className="size-3" />
               </button>
@@ -190,20 +190,20 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
       ) : null}
 
       {error ? (
-        <p className="border-b border-border/40 px-3 py-2 text-[11px] text-destructive">{error}</p>
+        <p className="border-b border-rose-950/60 px-3 py-2 text-[11px] text-destructive">{error}</p>
       ) : null}
 
       {/* Conversation list grouped chronologically */}
       <ScrollArea className="min-h-0 flex-1 px-2">
         {filteredConversations.length === 0 ? (
-          <div className="px-3 py-8 text-center text-xs text-muted-foreground">
+          <div className="px-3 py-8 text-center text-xs font-mono text-zinc-500">
             {loading ? "Loading…" : searchQuery ? "No matching conversations" : "No previous research sessions."}
           </div>
         ) : (
           <div className="space-y-4 py-2">
             {Object.entries(groupedConversations).map(([groupTitle, items]) => (
               <div key={groupTitle} className="space-y-1">
-                <div className="px-2 py-1 text-[11px] font-medium tracking-wider text-muted-foreground/70 uppercase">
+                <div className="px-2 py-1 text-[10px] font-mono tracking-wider text-zinc-500 uppercase">
                   {groupTitle}
                 </div>
                 <ul className="space-y-0.5">
@@ -215,8 +215,8 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
                           className={cn(
                             "group flex items-center justify-between gap-1 rounded-lg px-2.5 py-2 text-xs transition-colors",
                             active
-                              ? "bg-white/[0.08] text-foreground font-medium"
-                              : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+                              ? "bg-rose-500/15 text-rose-100 font-medium border border-rose-500/30 shadow-[0_0_12px_rgba(225,29,72,0.15)]"
+                              : "text-zinc-400 hover:bg-rose-950/30 hover:text-rose-200",
                           )}
                         >
                           {renamingId === conversation.id ? (
@@ -245,7 +245,7 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
                                 onBlur={(event) => {
                                   void commitRename(conversation.id, event.currentTarget.value);
                                 }}
-                                className="w-full rounded border border-primary/50 bg-black/40 px-1.5 py-0.5 text-xs text-foreground outline-none"
+                                className="w-full rounded border border-rose-500/60 bg-black/50 px-1.5 py-0.5 text-xs text-foreground outline-none font-mono"
                                 autoFocus
                               />
                             </form>
@@ -259,8 +259,8 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
                                 });
                               }}
                             >
-                              <p className="truncate text-xs">{conversation.title}</p>
-                              <p className="text-[10px] text-muted-foreground/60">
+                              <p className="truncate text-xs font-medium">{conversation.title}</p>
+                              <p className="text-[10px] font-mono text-zinc-500">
                                 {relativeTime(conversation.updated_at)}
                               </p>
                             </button>
@@ -269,7 +269,7 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
                           <button
                             type="button"
                             aria-label={`Actions for ${conversation.title}`}
-                            className="opacity-0 group-hover:opacity-100 rounded p-1 text-muted-foreground transition hover:bg-white/[0.1] hover:text-foreground"
+                            className="opacity-0 group-hover:opacity-100 rounded p-1 text-zinc-400 transition hover:bg-rose-950/50 hover:text-rose-200"
                             onClick={() => {
                               setMenuId((current) =>
                                 current === conversation.id ? null : conversation.id,
@@ -284,23 +284,23 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
                         {menuId === conversation.id ? (
                           <div
                             ref={menuRef}
-                            className="absolute top-full right-2 z-30 mt-1 w-32 overflow-hidden rounded-lg border border-border/80 bg-[#16161a] py-1 shadow-xl"
+                            className="absolute top-full right-2 z-30 mt-1 w-32 overflow-hidden rounded-lg border border-rose-950/90 bg-[#140612]/95 py-1 shadow-2xl backdrop-blur-xl font-mono text-xs"
                           >
                             <button
                               type="button"
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-white/[0.08]"
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-zinc-300 hover:bg-rose-950/40 hover:text-rose-200"
                               onClick={() => {
                                 setMenuId(null);
                                 setRenamingId(conversation.id);
                                 setRenameDraft(conversation.title);
                               }}
                             >
-                              <Pencil className="size-3 text-muted-foreground" />
+                              <Pencil className="size-3 text-rose-400" />
                               Rename
                             </button>
                             <button
                               type="button"
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-destructive hover:bg-destructive/10"
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-destructive hover:bg-destructive/10"
                               onClick={() => {
                                 setMenuId(null);
                                 setDeleteConfirmId(conversation.id);
@@ -323,9 +323,9 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
 
       {/* Delete Confirmation Dialog */}
       {deleteConfirmId ? (
-        <div className="border-t border-border/40 bg-black/40 p-3">
-          <p className="text-xs font-medium text-foreground mb-1.5">Delete conversation?</p>
-          <p className="text-[11px] text-muted-foreground mb-2.5">
+        <div className="border-t border-rose-950/60 bg-black/60 p-3 font-mono">
+          <p className="text-xs font-semibold text-foreground mb-1">Delete inquiry session?</p>
+          <p className="text-[11px] text-zinc-400 mb-2.5">
             This will permanently remove this research history.
           </p>
           <div className="flex gap-2">
@@ -346,7 +346,7 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
               type="button"
               size="sm"
               variant="outline"
-              className="h-7 flex-1 text-xs"
+              className="h-7 flex-1 text-xs border-rose-950/70"
               onClick={() => setDeleteConfirmId(null)}
             >
               Cancel
@@ -356,17 +356,17 @@ export function HistorySidebar({ className, compact = false }: HistorySidebarPro
       ) : null}
 
       {/* Footer Area: Settings & Save History Status */}
-      <div className="border-t border-border/40 p-2.5">
+      <div className="border-t border-rose-950/60 p-2.5">
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition hover:bg-white/[0.04] hover:text-foreground"
+          className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-xs text-zinc-400 transition hover:bg-rose-950/40 hover:text-rose-200 font-mono"
         >
           <div className="flex items-center gap-2">
-            <Settings className="size-3.5" />
+            <Settings className="size-3.5 text-rose-400" />
             <span>Settings & Models</span>
           </div>
-          <span className="text-[10px] text-muted-foreground/60">
+          <span className="text-[10px] text-zinc-500">
             {saveHistoryEnabled ? "History on" : "History off"}
           </span>
         </button>

@@ -2,55 +2,55 @@
 @import "tw-animate-css";
 
 :root {
-  /* Design-system: Quiet Intelligence (ChatGPT / Claude / Gemini caliber) */
+  /* Design-system: Futuristic Cyber-Tactical Research Studio (Jarvis/Ultron-caliber HUD) */
   --radius: 0.75rem;
   --duration-fast: 120ms;
   --duration-normal: 200ms;
   --duration-slow: 350ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* Clean Zinc Dark Canvas & Elevated Neutral Surfaces */
-  --background: #09090b;
-  --foreground: #f4f4f5;
+  /* Deep Obsidian Canvas & Dark Crimson Glass Surfaces */
+  --background: #060408;
+  --foreground: #f4f4f6;
 
-  --card: #121215;
-  --card-foreground: #f4f4f5;
+  --card: #0e050c;
+  --card-foreground: #f4f4f6;
 
-  --popover: #18181b;
-  --popover-foreground: #f4f4f5;
+  --popover: #140713;
+  --popover-foreground: #f4f4f6;
 
-  /* Primary Accent: Restrained Blue Accent */
-  --primary: #3b82f6;
+  /* Primary Accent: Glowing Crimson / Ruby Energy Core */
+  --primary: #e11d48;
   --primary-foreground: #ffffff;
 
-  --secondary: #1f1f23;
-  --secondary-foreground: #e4e4e7;
+  --secondary: #1a0818;
+  --secondary-foreground: #fda4af;
 
-  --muted: #18181b;
+  --muted: #120611;
   --muted-foreground: #a1a1aa;
 
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
+  --accent: #240b21;
+  --accent-foreground: #ffe4e6;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: rgba(59, 130, 246, 0.4);
+  --border: rgba(225, 29, 72, 0.2);
+  --input: rgba(225, 29, 72, 0.25);
+  --ring: rgba(225, 29, 72, 0.5);
 
-  /* Semantic Structure Signal Colors (Muted & Discernible) */
-  --signal-assertion: #60a5fa;
-  --signal-evidence: #34d399;
-  --signal-reasoning: #a78bfa;
-  --signal-hedge: #fbbf24;
-  --signal-conclusion: #38bdf8;
-  --signal-contradiction: #f87171;
+  /* Semantic Telemetry Signal Colors */
+  --signal-assertion: #38bdf8;
+  --signal-evidence: #10b981;
+  --signal-reasoning: #818cf8;
+  --signal-hedge: #f59e0b;
+  --signal-conclusion: #ec4899;
+  --signal-contradiction: #ff2e63;
 
-  --panel-bg: #111113;
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --surface-hover: rgba(255, 255, 255, 0.04);
-  --surface-active: rgba(255, 255, 255, 0.08);
+  --panel-bg: #0b040a;
+  --panel-border: rgba(225, 29, 72, 0.25);
+  --surface-hover: rgba(225, 29, 72, 0.08);
+  --surface-active: rgba(225, 29, 72, 0.15);
 }
 
 @theme inline {
@@ -120,44 +120,61 @@
   }
 
   ::selection {
-    background: rgba(59, 130, 246, 0.25);
+    background: rgba(225, 29, 72, 0.35);
     color: var(--foreground);
   }
 }
 
 @layer components {
-  /* Minimal clean panel */
+  /* Futuristic Cyber-Tactical HUD Components */
   .clean-panel {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.7);
   }
 
   .glass-panel {
-    background: rgba(18, 18, 21, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(14, 5, 12, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
   }
 
+  .cyber-glow-crimson {
+    box-shadow: 0 0 25px rgba(225, 29, 72, 0.25), inset 0 0 15px rgba(225, 29, 72, 0.1);
+  }
+
+  .hud-card {
+    background: rgba(18, 6, 16, 0.7);
+    border: 1px solid rgba(225, 29, 72, 0.25);
+    backdrop-filter: blur(16px);
+    transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .hud-card:hover {
+    border-color: rgba(225, 29, 72, 0.5);
+    box-shadow: 0 8px 24px -4px rgba(225, 29, 72, 0.2);
+    transform: translateY(-1px);
+  }
+
   .panel-active {
-    border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+    border-color: rgba(225, 29, 72, 0.6);
+    box-shadow: 0 0 0 1px rgba(225, 29, 72, 0.3), 0 0 20px rgba(225, 29, 72, 0.2);
   }
 
   .glass-input {
-    background: rgba(24, 24, 27, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(10, 4, 9, 0.85);
+    border: 1px solid rgba(225, 29, 72, 0.25);
     transition:
       border-color var(--duration-normal) var(--ease-out),
       box-shadow var(--duration-normal) var(--ease-out);
   }
 
   .glass-input:focus-visible {
-    border-color: rgba(59, 130, 246, 0.6);
-    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+    border-color: rgba(225, 29, 72, 0.7);
+    box-shadow: 0 0 0 1px rgba(225, 29, 72, 0.4), 0 0 15px rgba(225, 29, 72, 0.25);
   }
 
   .scrollbar-slim {

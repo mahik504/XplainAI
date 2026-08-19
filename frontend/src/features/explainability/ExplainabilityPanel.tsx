@@ -83,12 +83,12 @@ export function ExplainabilityPanel({
   return (
     <aside
       className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden bg-[#101014] border-l border-border/60 shadow-2xl",
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-[#080207] border-l border-rose-950/70 shadow-2xl",
         className,
       )}
     >
       {/* Header & Tabs */}
-      <header className="shrink-0 border-b border-border/40 bg-[#121216] px-3.5 py-2.5">
+      <header className="shrink-0 border-b border-rose-950/60 bg-[#0d040c]/90 px-3.5 py-2.5 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="font-display text-xs font-semibold tracking-tight text-foreground">
@@ -97,7 +97,7 @@ export function ExplainabilityPanel({
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-black/30 p-0.5">
+            <div className="flex items-center gap-1 rounded-lg border border-rose-950/80 bg-black/40 p-0.5 font-mono">
               <TabButton
                 active={activeTab === "topology"}
                 onClick={() => setActiveTab("topology")}
@@ -129,7 +129,7 @@ export function ExplainabilityPanel({
             <button
               type="button"
               onClick={() => setInspectorOpen(false)}
-              className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-950/50 hover:text-rose-200"
               title="Close panel"
             >
               <X className="size-3.5" />
@@ -139,7 +139,7 @@ export function ExplainabilityPanel({
 
         {/* Live Stage Progress */}
         {(isStreaming || stageEvents.length > 0) && (
-          <div className="mt-2 pt-2 border-t border-border/30">
+          <div className="mt-2 pt-2 border-t border-rose-950/40">
             <StageRail events={stageEvents} isStreaming={isStreaming} mode={runMode} />
           </div>
         )}
@@ -184,10 +184,10 @@ export function ExplainabilityPanel({
           <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
             <RetrievedSourcesCard sources={retrievedSources} emptyHint={sourcesEmptyHint} />
             {!sourcesEmptyHint && retrievedSources.length === 0 ? (
-              <div className="rounded-xl border border-border/60 bg-white/[0.02] p-6 text-center text-xs text-muted-foreground">
-                <FileText className="mx-auto size-8 text-muted-foreground/40 mb-2" />
+              <div className="rounded-xl border border-rose-950/60 bg-[#0e050c]/50 p-6 text-center text-xs text-zinc-400">
+                <FileText className="mx-auto size-8 text-rose-700/50 mb-2" />
                 <p className="font-medium text-foreground">No retrieved sources for this inquiry.</p>
-                <p className="mt-1 text-muted-foreground/80">
+                <p className="mt-1 text-zinc-500">
                   Gathered sources from ArXiv, Wikipedia, and the web will appear here.
                 </p>
               </div>
@@ -234,10 +234,10 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition",
+        "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-mono transition",
         active
-          ? "bg-white/[0.1] text-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]",
+          ? "bg-rose-500/20 text-rose-200 border border-rose-500/40 shadow-sm"
+          : "text-zinc-400 hover:text-rose-200 hover:bg-rose-950/40",
       )}
     >
       <Icon className="size-3" />
@@ -246,7 +246,7 @@ function TabButton({
         <span
           className={cn(
             "rounded-full px-1.5 text-[9px] font-mono",
-            active ? "bg-primary text-primary-foreground" : "bg-white/[0.08] text-muted-foreground",
+            active ? "bg-rose-500 text-white" : "bg-rose-950/60 text-rose-300 border border-rose-900/40",
           )}
         >
           {badge}

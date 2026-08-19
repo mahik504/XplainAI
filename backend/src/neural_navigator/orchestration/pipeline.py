@@ -159,11 +159,15 @@ def analyze_query(text: str) -> QueryAnalysis:
 def _decompose_research_tasks(text: str, analysis: QueryAnalysis, *, deep: bool) -> list[str]:
     base = text.strip()
     tasks = [base]
-    if analysis.domain != "general":
+    if deep:
+        tasks.append(f"{base} empirical methodology findings")
+        tasks.append(f"{base} leading research papers benchmarks")
+        tasks.append(f"{base} limitations contradictions criticisms")
+        if analysis.domain != "general":
+            tasks.append(f"{base} state of the art {analysis.domain}")
+    elif analysis.domain != "general":
         tasks.append(f"{base} key facts {analysis.domain}")
-    if deep or analysis.complexity == "complex":
-        tasks.append(f"{base} risks limitations criticisms")
-        tasks.append(f"{base} supporting evidence statistics")
+
     # Deduplicate while preserving order
     seen: set[str] = set()
     ordered: list[str] = []
@@ -173,7 +177,7 @@ def _decompose_research_tasks(text: str, analysis: QueryAnalysis, *, deep: bool)
             continue
         seen.add(key)
         ordered.append(task)
-    return ordered[: 4 if deep else 2]
+    return ordered[: 5 if deep else 2]
 
 
 def _build_augmented_messages(
@@ -346,17 +350,29 @@ async def run_orchestrated_chat(
         )
         if should_search:
             queries = research_tasks or [user_text]
-            limit = 3 if mode is RunMode.DEEP_RESEARCH else 1
+            limit = 4 if mode is RunMode.DEEP_RESEARCH else 1
             for query in queries[:limit]:
                 await emit_stage(OrchestrationStage.TOOL_STARTED, {"tool": "web_search", "query": query})
-                search = await tool_registry.execute("web_search", query=query, max_results=4)
+                search = await tool_registry.execute(
+                    "web_search",
+                    query=query,
+                    max_results=5 if mode is RunMode.DEEP_RESEARCH else 3,
+                )
                 tool_results.append(search)
                 await emit_stage(OrchestrationStage.TOOL_COMPLETED, search.as_dict())
 
-                if mode is RunMode.DEEP_RESEARCH and analysis.domain == "science":
-                    arxiv_res = await tool_registry.execute("arxiv", query=query)
-                    tool_results.append(arxiv_res)
-                    await emit_stage(OrchestrationStage.TOOL_COMPLETED, arxiv_res.as_dict())
+                if mode is RunMode.DEEP_RESEARCH:
+                    # Academic ArXiv search for deep queries
+                    arxiv_res = await tool_registry.execute("arxiv", query=query, max_results=3)
+                    if arxiv_res.status == "ok":
+                        tool_results.append(arxiv_res)
+                        await emit_stage(OrchestrationStage.TOOL_COMPLETED, arxiv_res.as_dict())
+
+                    # Wikipedia consensus for definitions & foundations
+                    wiki_res = await tool_registry.execute("wikipedia", query=query)
+                    if wiki_res.status == "ok":
+                        tool_results.append(wiki_res)
+                        await emit_stage(OrchestrationStage.TOOL_COMPLETED, wiki_res.as_dict())
 
             if mode is RunMode.DEEP_RESEARCH and settings.newsdata_api_key is not None:
                 await emit_stage(OrchestrationStage.TOOL_STARTED, {"tool": "news", "query": user_text})
