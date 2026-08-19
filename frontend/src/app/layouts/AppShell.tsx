@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { Outlet } from "react-router-dom";
 
-import { AmbientBackground } from "@/components/common/AmbientBackground";
+import { AmbientShaderBackground } from "@/components/common/AmbientShaderBackground";
 import { HistorySidebar } from "@/features/history";
 import { VoiceInputModal } from "@/features/voice/VoiceInputModal";
 import { HolographicVisionScanner } from "@/features/vision/HolographicVisionScanner";
@@ -36,9 +36,9 @@ export function AppShell() {
   return (
     <div
       style={{ "--glass-strength": glassStrength } as CSSProperties}
-      className="relative flex h-dvh w-full overflow-hidden bg-[#060206] text-foreground"
+      className="relative flex h-dvh w-full overflow-hidden bg-[#030712] text-foreground"
     >
-      <AmbientBackground />
+      <AmbientShaderBackground />
 
       <div className="relative flex min-w-0 flex-1 flex-col">
         <TopNav

@@ -91,21 +91,21 @@ export function ExplainabilityPanel({
   return (
     <aside
       className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden bg-[#080207] border-l border-rose-950/70 shadow-2xl",
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-[#070b16] border-l border-white/[0.08] shadow-2xl",
         className,
       )}
     >
       {/* Header & Tabs */}
-      <header className="shrink-0 border-b border-rose-950/60 bg-[#0d040c]/90 px-3 py-2 backdrop-blur-xl">
+      <header className="shrink-0 border-b border-white/[0.08] bg-[#0a0f1d]/90 px-3 py-2 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold tracking-tight text-rose-300">
-              {claimFocusActive ? "CLAIM VERIFICATION" : "EXPLAINABILITY HUD"}
+            <span className="font-mono text-xs font-bold tracking-tight text-cyan-300">
+              {claimFocusActive ? "CLAIM VERIFICATION" : "EXPLAINABILITY COCKPIT"}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-0.5 rounded-lg border border-rose-950/80 bg-black/50 p-0.5 font-mono">
+            <div className="flex items-center gap-0.5 rounded-lg border border-white/[0.08] bg-black/40 p-0.5 font-mono">
               <TabButton
                 active={activeTab === "topology"}
                 onClick={() => handleTabChange("topology")}
@@ -146,7 +146,7 @@ export function ExplainabilityPanel({
                 hudAudio.playClick();
                 setInspectorOpen(false);
               }}
-              className="flex size-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-950/50 hover:text-rose-200"
+              className="flex size-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
               title="Close panel"
             >
               <X className="size-3.5" />
@@ -156,16 +156,16 @@ export function ExplainabilityPanel({
 
         {/* Live Stage Progress */}
         {(isStreaming || stageEvents.length > 0) && (
-          <div className="mt-2 pt-2 border-t border-rose-950/40">
+          <div className="mt-2 pt-2 border-t border-white/[0.06]">
             <StageRail events={stageEvents} isStreaming={isStreaming} mode={runMode} />
           </div>
         )}
       </header>
 
-      {/* Main Tab Content */}
-      <div className="min-h-0 flex-1 overflow-hidden">
+      {/* Main Drawer Canvas Content */}
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         {activeTab === "topology" && (
-          <div className="relative size-full overflow-hidden">
+          <div className="relative size-full">
             <GraphPanel
               active
               className="size-full border-0 bg-transparent shadow-none"
@@ -176,7 +176,6 @@ export function ExplainabilityPanel({
               title={graphTitle}
               description={graphDescription}
               surface={showingStructure || claimFocusActive ? "structure" : "pipeline"}
-              claimFocusActive={claimFocusActive}
               {...(onExitClaimFocus ? { onExitClaimFocus } : {})}
               viewKey={viewKey}
               compactChrome
@@ -201,10 +200,10 @@ export function ExplainabilityPanel({
           <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
             <RetrievedSourcesCard sources={retrievedSources} emptyHint={sourcesEmptyHint} />
             {!sourcesEmptyHint && retrievedSources.length === 0 ? (
-              <div className="rounded-xl border border-rose-950/60 bg-[#0e050c]/50 p-6 text-center text-xs text-zinc-400">
-                <FileText className="mx-auto size-8 text-rose-700/50 mb-2" />
-                <p className="font-medium text-foreground">No retrieved sources for this inquiry.</p>
-                <p className="mt-1 text-zinc-500">
+              <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/50 p-6 text-center text-xs text-slate-400">
+                <FileText className="mx-auto size-8 text-cyan-600/50 mb-2" />
+                <p className="font-medium text-white">No retrieved sources for this inquiry.</p>
+                <p className="mt-1 text-slate-500">
                   Gathered sources from ArXiv, Wikipedia, and the web will appear here.
                 </p>
               </div>
@@ -259,8 +258,8 @@ function TabButton({
       className={cn(
         "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-mono transition",
         active
-          ? "bg-rose-500/20 text-rose-200 border border-rose-500/40 shadow-sm"
-          : "text-zinc-400 hover:text-rose-200 hover:bg-rose-950/40",
+          ? "bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 shadow-sm"
+          : "text-slate-400 hover:text-cyan-200 hover:bg-white/[0.04]",
       )}
     >
       <Icon className="size-3" />
@@ -269,7 +268,7 @@ function TabButton({
         <span
           className={cn(
             "rounded-full px-1.5 text-[9px] font-mono",
-            active ? "bg-rose-500 text-white" : "bg-rose-950/60 text-rose-300 border border-rose-900/40",
+            active ? "bg-cyan-500 text-white" : "bg-cyan-950/60 text-cyan-300 border border-cyan-900/40",
           )}
         >
           {badge}

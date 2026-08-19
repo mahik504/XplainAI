@@ -138,23 +138,22 @@ export function ChatPanel({
   const lastAssistantId = isStreaming && lastAssistant ? lastAssistant.id : undefined;
 
   return (
-    <div className={cn("relative flex h-full flex-col overflow-hidden bg-[#060408]", className)}>
+    <div className={cn("relative flex h-full flex-col overflow-hidden bg-transparent", className)}>
       {/* Scrollable Conversation Canvas */}
       <div className="relative min-h-0 flex-1 overflow-y-auto scrollbar-slim">
         {messages.length === 0 ? (
           <div className="flex min-h-full flex-col items-center justify-center px-4 py-12">
             <div className="w-full max-w-2xl space-y-8 text-center">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/40 bg-rose-500/10 px-3.5 py-1 text-xs font-mono text-rose-300 shadow-[0_0_12px_rgba(225,29,72,0.2)]">
-                  <span className="size-1.5 rounded-full bg-rose-400 animate-pulse" />
-                  <span>RESEARCH TELEMETRY ACTIVE</span>
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1 text-xs font-mono text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+                  <span className="size-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <span>EMPIRICAL RESEARCH TELEMETRY ACTIVE</span>
                 </div>
-                <h1 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                <h1 className="font-display text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-cyan-100 to-indigo-200 bg-clip-text text-transparent sm:text-4xl">
                   What would you like to explore?
                 </h1>
-                <p className="mx-auto max-w-lg text-sm leading-relaxed text-zinc-400">
-                  Empirical research with verified academic sources, structured reasoning breakdown,
-                  and 3D holographic knowledge mapping.
+                <p className="mx-auto max-w-lg text-sm leading-relaxed text-slate-400">
+                  Observable synthesis with verified sources, epistemically grounded claims, and 3D knowledge topology.
                 </p>
               </div>
 
@@ -169,17 +168,17 @@ export function ChatPanel({
                       hudAudio.playChirp();
                       onSend?.(item.prompt);
                     }}
-                    className="hud-bracket-box group flex flex-col justify-between rounded-xl border border-rose-950/70 bg-[#0e050c]/80 p-4 transition-all hover:border-rose-500/60 hover:bg-[#160814] hover:shadow-[0_4px_25px_rgba(225,29,72,0.2)] active:scale-[0.99]"
+                    className="group relative flex flex-col justify-between rounded-2xl border border-white/[0.07] bg-[#0c1222]/70 p-4.5 backdrop-blur-xl transition-all duration-200 hover:border-cyan-400/40 hover:bg-[#11192e]/90 hover:shadow-[0_8px_30px_rgba(6,182,212,0.12)] active:scale-[0.99]"
                   >
                     <div>
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-rose-400/80 font-bold">
+                      <span className="inline-block rounded-md bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-cyan-300 border border-cyan-500/20">
                         {item.category}
                       </span>
-                      <p className="mt-1 text-xs font-semibold text-foreground group-hover:text-rose-200 transition-colors">
+                      <p className="mt-2 text-xs font-semibold text-white group-hover:text-cyan-200 transition-colors">
                         {item.title}
                       </p>
                     </div>
-                    <span className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-zinc-400">
+                    <span className="mt-2.5 line-clamp-2 text-[11px] leading-relaxed text-slate-400">
                       {item.prompt}
                     </span>
                   </button>
@@ -220,9 +219,9 @@ export function ChatPanel({
                   ) : (
                     <div
                       className={cn(
-                        "rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed",
+                        "rounded-2xl px-4.5 py-3 text-[15px] leading-relaxed",
                         message.role === "user"
-                          ? "max-w-[85%] bg-[#180816] text-foreground border border-rose-900/40 shadow-sm"
+                          ? "max-w-[85%] bg-[#0f172a]/90 text-foreground border border-white/[0.09] shadow-lg"
                           : "w-full text-foreground/90 leading-7",
                         message.role === "system" && "border-dashed text-muted-foreground italic text-xs",
                       )}
@@ -240,7 +239,7 @@ export function ChatPanel({
                     <div className="flex items-center gap-2 pt-1 text-muted-foreground">
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground/70 transition hover:bg-white/[0.05] hover:text-foreground"
+                        className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
                         onClick={() => void navigator.clipboard.writeText(message.content)}
                         title="Copy text"
                       >
@@ -250,7 +249,7 @@ export function ChatPanel({
                       {isLatestFinishedAssistant && onRetry ? (
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-muted-foreground/70 transition hover:bg-white/[0.05] hover:text-foreground"
+                          className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
                           onClick={onRetry}
                           title="Retry response"
                         >
@@ -286,11 +285,11 @@ export function ChatPanel({
               submit();
             }}
             className={cn(
-              "relative flex flex-col rounded-2xl border bg-[#0e050c]/90 p-2.5 shadow-2xl backdrop-blur-2xl transition-all",
-              "focus-within:border-rose-500/70 focus-within:ring-1 focus-within:ring-rose-500/50 focus-within:shadow-[0_0_25px_rgba(225,29,72,0.2)]",
+              "relative flex flex-col rounded-2xl border bg-[#0a0f1d]/90 p-2.5 shadow-2xl backdrop-blur-2xl transition-all",
+              "focus-within:border-cyan-400/60 focus-within:ring-1 focus-within:ring-cyan-400/40 focus-within:shadow-[0_0_30px_rgba(6,182,212,0.2)]",
               evidenceDemandHighlight
                 ? "border-amber-500/70 ring-1 ring-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.25)]"
-                : "border-rose-950/80",
+                : "border-white/10",
             )}
           >
             <textarea
@@ -302,10 +301,10 @@ export function ChatPanel({
               rows={1}
               disabled={disabled}
               placeholder={placeholder}
-              className="scrollbar-slim max-h-44 min-h-[2.5rem] w-full resize-none overflow-y-auto rounded-lg bg-transparent px-2 py-1 text-sm leading-relaxed text-foreground placeholder:text-zinc-500 focus:outline-none disabled:opacity-40 font-sans"
+              className="scrollbar-slim max-h-44 min-h-[2.5rem] w-full resize-none overflow-y-auto rounded-lg bg-transparent px-2 py-1 text-sm leading-relaxed text-foreground placeholder:text-slate-500 focus:outline-none disabled:opacity-40 font-sans"
             />
 
-            <div className="flex items-center justify-between gap-2 pt-2 px-1 border-t border-rose-950/40 mt-1">
+            <div className="flex items-center justify-between gap-2 pt-2 px-1 border-t border-white/[0.06] mt-1">
               <div className="flex items-center gap-1.5">
                 {onRunModeChange ? (
                   <ModeSelector
@@ -322,11 +321,11 @@ export function ChatPanel({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="size-8 rounded-full border-rose-500/40 bg-rose-950/30 p-0 text-rose-300 hover:bg-rose-950/60"
+                    className="size-8 rounded-full border-cyan-500/40 bg-cyan-950/30 p-0 text-cyan-300 hover:bg-cyan-950/60"
                     onClick={onStop}
                     title="Stop generation"
                   >
-                    <Square className="size-3 fill-current text-rose-400" />
+                    <Square className="size-3 fill-current text-cyan-400" />
                   </Button>
                 ) : (
                   <Button
@@ -334,10 +333,10 @@ export function ChatPanel({
                     size="sm"
                     disabled={!canSend}
                     className={cn(
-                      "size-8 rounded-full p-0 transition-all font-mono",
+                      "size-8 rounded-full p-0 transition-all",
                       canSend
-                        ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white hover:from-rose-400 hover:to-rose-500 shadow-[0_0_15px_rgba(225,29,72,0.5)]"
-                        : "bg-rose-950/30 text-zinc-600 cursor-not-allowed border border-rose-950/50",
+                        ? "bg-gradient-to-br from-cyan-500 to-indigo-600 text-white hover:from-cyan-400 hover:to-indigo-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                        : "bg-white/[0.04] text-zinc-600 cursor-not-allowed border border-white/[0.06]",
                     )}
                     title="Send message (Enter)"
                   >
@@ -347,7 +346,7 @@ export function ChatPanel({
               </div>
             </div>
           </form>
-          <p className="mt-1.5 text-center text-[10px] font-mono text-zinc-500">
+          <p className="mt-1.5 text-center text-[10px] font-mono text-slate-500">
             XplainAI grounds responses in observable sources. Verify critical claims.
           </p>
         </div>

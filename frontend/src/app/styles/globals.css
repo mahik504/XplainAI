@@ -1,153 +1,56 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-:root,
-[data-hud-theme="ultron"] {
-  /* Ultron Overdrive: Carbon Obsidian & Crimson Laser */
+:root {
+  /* Quantum Obsidian & Aetheric Hologram Design System */
   --radius: 0.75rem;
   --duration-fast: 120ms;
   --duration-normal: 200ms;
   --duration-slow: 350ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --background: #060206;
-  --foreground: #f4f4f6;
+  --background: #030712;
+  --foreground: #f8fafc;
 
-  --card: #0d030c;
-  --card-foreground: #f4f4f6;
+  --card: #0a0f1d;
+  --card-foreground: #f8fafc;
 
-  --popover: #130512;
-  --popover-foreground: #f4f4f6;
+  --popover: #0e1526;
+  --popover-foreground: #f8fafc;
 
-  --primary: #ff2e63;
+  --primary: #06b6d4;
   --primary-foreground: #ffffff;
 
-  --secondary: #1f071c;
-  --secondary-foreground: #fda4af;
+  --secondary: #111827;
+  --secondary-foreground: #94a3b8;
 
-  --muted: #120411;
-  --muted-foreground: #a1a1aa;
+  --muted: #0b1120;
+  --muted-foreground: #94a3b8;
 
-  --accent: #2c0928;
-  --accent-foreground: #ffe4e6;
+  --accent: #1e293b;
+  --accent-foreground: #e2e8f0;
 
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --border: rgba(255, 46, 99, 0.25);
-  --input: rgba(255, 46, 99, 0.3);
-  --ring: rgba(255, 46, 99, 0.6);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: rgba(6, 182, 212, 0.5);
 
-  --signal-assertion: #ff2e63;
+  --signal-assertion: #38bdf8;
   --signal-evidence: #10b981;
   --signal-reasoning: #818cf8;
   --signal-hedge: #f59e0b;
-  --signal-conclusion: #ec4899;
-  --signal-contradiction: #ff0055;
+  --signal-conclusion: #c084fc;
+  --signal-contradiction: #f43f5e;
 
-  --panel-bg: #090208;
-  --panel-border: rgba(255, 46, 99, 0.3);
-  --surface-hover: rgba(255, 46, 99, 0.1);
-  --surface-active: rgba(255, 46, 99, 0.2);
+  --panel-bg: #070b16;
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --surface-hover: rgba(255, 255, 255, 0.04);
+  --surface-active: rgba(255, 255, 255, 0.08);
 }
 
-[data-hud-theme="jarvis"] {
-  /* Jarvis Core: Deep Holographic Cyan & Electric Azure */
-  --background: #020912;
-  --foreground: #f0fdf4;
-
-  --card: #041424;
-  --card-foreground: #f0fdf4;
-
-  --popover: #051d34;
-  --popover-foreground: #f0fdf4;
-
-  --primary: #00f0ff;
-  --primary-foreground: #020912;
-
-  --secondary: #082846;
-  --secondary-foreground: #a5f3fc;
-
-  --muted: #04172a;
-  --muted-foreground: #94a3b8;
-
-  --accent: #0b3860;
-  --accent-foreground: #cffafe;
-
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-
-  --border: rgba(0, 240, 255, 0.25);
-  --input: rgba(0, 240, 255, 0.3);
-  --ring: rgba(0, 240, 255, 0.6);
-
-  --signal-assertion: #00f0ff;
-  --signal-evidence: #10b981;
-  --signal-reasoning: #38bdf8;
-  --signal-hedge: #f59e0b;
-  --signal-conclusion: #a855f7;
-  --signal-contradiction: #ff0055;
-
-  --panel-bg: #030e1c;
-  --panel-border: rgba(0, 240, 255, 0.3);
-  --surface-hover: rgba(0, 240, 255, 0.1);
-  --surface-active: rgba(0, 240, 255, 0.2);
-}
-
-[data-hud-theme="stark"] {
-  /* Stark Tactical: Deep Amber & Arc Reactor Gold */
-  --background: #080502;
-  --foreground: #fffbeb;
-
-  --card: #150c04;
-  --card-foreground: #fffbeb;
-
-  --popover: #1f1206;
-  --popover-foreground: #fffbeb;
-
-  --primary: #ffb703;
-  --primary-foreground: #080502;
-
-  --secondary: #2b1a08;
-  --secondary-foreground: #fde68a;
-
-  --muted: #170d04;
-  --muted-foreground: #a8a29e;
-
-  --accent: #3d240c;
-  --accent-foreground: #fef3c7;
-
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-
-  --border: rgba(255, 183, 3, 0.25);
-  --input: rgba(255, 183, 3, 0.3);
-  --ring: rgba(255, 183, 3, 0.6);
-
-  --signal-assertion: #ffb703;
-  --signal-evidence: #10b981;
-  --signal-reasoning: #fb8500;
-  --signal-hedge: #f59e0b;
-  --signal-conclusion: #f43f5e;
-  --signal-contradiction: #ff0055;
-
-  --panel-bg: #0c0803;
-  --panel-border: rgba(255, 183, 3, 0.3);
-  --surface-hover: rgba(255, 183, 3, 0.1);
-  --surface-active: rgba(255, 183, 3, 0.2);
-}
-
-@theme inline {
-  --font-sans: "Geist", "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: "Geist", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -174,340 +77,112 @@
   --color-signal-hedge: var(--signal-hedge);
   --color-signal-conclusion: var(--signal-conclusion);
   --color-signal-contradiction: var(--signal-contradiction);
+
+  --color-panel-bg: var(--panel-bg);
+  --color-panel-border: var(--panel-border);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
+
+  --font-sans: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  html {
-    color-scheme: dark;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    overscroll-behavior: none;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  .font-display {
-    font-family: var(--font-display);
-    letter-spacing: -0.015em;
-  }
-
-  ::selection {
-    background: rgba(225, 29, 72, 0.35);
-    color: var(--foreground);
-  }
+* {
+  box-sizing: border-box;
 }
 
-@layer components {
-  /* Futuristic Cyber-Tactical HUD Components */
-  .clean-panel {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.7);
-  }
-
-  .glass-panel {
-    background: rgba(14, 5, 12, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-  }
-
-  .hud-bracket-box {
-    position: relative;
-  }
-
-  .hud-bracket-box::before {
-    content: "";
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    width: 8px;
-    height: 8px;
-    border-top: 2px solid var(--primary);
-    border-left: 2px solid var(--primary);
-    pointer-events: none;
-  }
-
-  .hud-bracket-box::after {
-    content: "";
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    width: 8px;
-    height: 8px;
-    border-bottom: 2px solid var(--primary);
-    border-right: 2px solid var(--primary);
-    pointer-events: none;
-  }
-
-  .hud-cut-corner {
-    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-  }
-
-  .hud-scanline {
-    background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 0) 50%,
-      rgba(0, 240, 255, 0.04) 50%,
-      rgba(0, 240, 255, 0.04)
-    );
-    background-size: 100% 4px;
-  }
-
-  .glass-input {
-    background: rgba(10, 4, 9, 0.85);
-    border: 1px solid rgba(225, 29, 72, 0.25);
-    transition:
-      border-color var(--duration-normal) var(--ease-out),
-      box-shadow var(--duration-normal) var(--ease-out);
-  }
-
-  .glass-input:focus-visible {
-    border-color: rgba(225, 29, 72, 0.7);
-    box-shadow: 0 0 0 1px rgba(225, 29, 72, 0.4), 0 0 15px rgba(225, 29, 72, 0.25);
-  }
-
-  .scrollbar-slim {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-  }
-
-  .scrollbar-slim::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  .scrollbar-slim::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scrollbar-slim::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 999px;
-  }
-
-  .scrollbar-slim::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
-  }
-
-  .typing-caret {
-    display: inline-block;
-    width: 0.5ch;
-    height: 1em;
-    margin-left: 0.1em;
-    vertical-align: -0.1em;
-    background: var(--primary);
-    animation: caret-blink 0.9s steps(1, end) infinite;
-  }
-
-  .nn-hover-lift {
-    transition:
-      transform 180ms var(--ease-out),
-      background-color 180ms ease,
-      border-color 180ms ease;
-  }
-
-  .nn-hover-lift:hover {
-    transform: translateY(-1px);
-  }
-}
-
-@keyframes caret-blink {
-  0%,
-  45% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-
-/* React Flow Minimal Custom Styling */
-.react-flow.react-flow {
-  --xy-background-color-default: transparent;
-}
-
-.react-flow__attribution {
-  display: none;
-}
-
-.react-flow__controls-button {
-  border: none;
-  border-bottom: 1px solid var(--border);
-  background: var(--popover);
-  color: var(--muted-foreground);
-}
-
-.react-flow__controls-button:hover {
-  background: var(--surface-active);
-  color: var(--foreground);
-}
-
-.react-flow__minimap {
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--card);
-}
-
-.react-flow__edge.nn-edge path,
-.react-flow__edge-path {
-  stroke: rgba(255, 255, 255, 0.2);
-  transition:
-    stroke 200ms ease,
-    stroke-width 200ms ease;
-}
-
-.react-flow__edge.animated path,
-.nn-edge--active path {
-  stroke: var(--primary);
-}
-
-.nn-flow-controls {
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-}
-
-.nn-node-wrapper {
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
   padding: 0;
-  border: none;
-  background: transparent;
-  width: auto;
-  height: auto;
-}
-
-.nn-node {
-  position: relative;
-  min-width: 120px;
-  max-width: 14rem;
-  padding: 0.65rem 0.9rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: var(--card);
+  overflow: hidden;
+  background-color: var(--background);
   color: var(--foreground);
-  font-size: 0.78rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  text-align: left;
-  transition:
-    transform 160ms var(--ease-out),
-    border-color 160ms ease,
-    box-shadow 160ms ease;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.nn-node:hover,
-.nn-node--selected {
-  transform: translateY(-1px);
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.5);
+/* Glassmorphism primitives */
+.glass-panel {
+  background: rgba(10, 15, 29, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.nn-node__body {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.glass-card {
+  background: rgba(13, 19, 34, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.nn-node__label {
-  display: block;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.glass-card:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  box-shadow: 0 4px 24px rgba(6, 182, 212, 0.08);
 }
 
-.nn-node__subtitle {
-  display: block;
-  font-size: 0.68rem;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Glow Utilities */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
 }
 
-.nn-node__meta {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  color: var(--muted-foreground);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.glow-indigo {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
 }
 
-.nn-node--structure-assertion {
-  border-left: 3px solid var(--signal-assertion);
+.glow-emerald {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
 }
 
-.nn-node--structure-evidence {
-  border-left: 3px solid var(--signal-evidence);
+/* Slim Scrollbar */
+.scrollbar-slim::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
 
-.nn-node--structure-connector {
-  border-left: 3px solid var(--signal-reasoning);
+.scrollbar-slim::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.nn-node--structure-uncertainty {
-  border-left: 3px solid var(--signal-hedge);
+.scrollbar-slim::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
 }
 
-.nn-node--structure-conclusion {
-  border-left: 3px solid var(--signal-conclusion);
+.scrollbar-slim::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
-.nn-node--pending {
-  color: var(--muted-foreground);
-  opacity: 0.7;
+/* Typing Caret Animation */
+.typing-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background-color: var(--primary);
+  animation: blink 1s step-end infinite;
 }
 
-.nn-node--active {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-.nn-node--complete {
-  border-color: rgba(52, 211, 153, 0.4);
+/* Shimmer Border */
+@keyframes shimmerBorder {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-.nn-node--skipped {
-  opacity: 0.4;
-}
-
-.nn-node--failed {
-  border-color: var(--destructive);
-}
-
-.nn-handle {
-  width: 6px !important;
-  height: 6px !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  background: var(--background) !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .typing-caret {
-    animation: none !important;
-  }
-
-  .nn-node,
-  .nn-hover-lift,
-  .react-flow__edge.nn-edge path {
-    transition: none !important;
-  }
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.4), rgba(99, 102, 241, 0.6), rgba(6, 182, 212, 0.4));
+  background-size: 200% 200%;
+  animation: shimmerBorder 4s ease infinite;
 }

@@ -35,12 +35,12 @@ interface EvidenceConstellation3DProps {
 }
 
 const TYPE_PALETTE: Record<string, { hex: number; css: string; label: string }> = {
-  claim: { hex: 0xff2e63, css: "#FF2E63", label: "Assertion / Claim" },
+  claim: { hex: 0x38bdf8, css: "#38BDF8", label: "Assertion / Claim" },
   evidence: { hex: 0x10b981, css: "#10B981", label: "Empirical Evidence" },
-  source: { hex: 0x00f0ff, css: "#00F0FF", label: "Verified Source" },
-  inference: { hex: 0x8b5cf6, css: "#8B5CF6", label: "Logical Connector" },
-  assumption: { hex: 0xffb703, css: "#FFB703", label: "Uncertainty / Hedge" },
-  conclusion: { hex: 0xec4899, css: "#EC4899", label: "Synthesis Conclusion" },
+  source: { hex: 0x06b6d4, css: "#06B6D4", label: "Verified Source" },
+  inference: { hex: 0x818cf8, css: "#818CF8", label: "Logical Connector" },
+  assumption: { hex: 0xf59e0b, css: "#F59E0B", label: "Uncertainty / Hedge" },
+  conclusion: { hex: 0xc084fc, css: "#C084FC", label: "Synthesis Conclusion" },
 };
 
 export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = ({
@@ -77,7 +77,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
 
     // 1. Scene & Deep Space Fog
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x060206, 0.0032);
+    scene.fog = new THREE.FogExp2(0x030712, 0.0032);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 1000);
@@ -88,7 +88,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x060206, 1);
+    renderer.setClearColor(0x030712, 1);
     container.replaceChildren(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -363,16 +363,16 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
   }, [nodes, edges, activeNodeId, onNodeClick]);
 
   return (
-    <div className={cn("relative size-full overflow-hidden select-none bg-[#060206]", className)}>
+    <div className={cn("relative size-full overflow-hidden select-none bg-[#030712]", className)}>
       <div ref={containerRef} className="size-full" />
 
       {/* Floating HUD Camera Controls */}
-      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 rounded-xl border border-rose-500/50 bg-[#12040f]/90 p-1.5 backdrop-blur-xl shadow-[0_0_20px_rgba(225,29,72,0.25)]">
+      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 rounded-xl border border-white/10 bg-[#0a0f1d]/90 p-1.5 backdrop-blur-xl shadow-lg">
         <Button
           type="button"
           size="sm"
           variant="ghost"
-          className="size-7 p-0 text-zinc-300 hover:bg-rose-950/60 hover:text-rose-200"
+          className="size-7 p-0 text-slate-300 hover:bg-white/[0.08] hover:text-white"
           onClick={resetCamera}
           title="Reset Camera Angle"
         >
@@ -383,31 +383,31 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       {/* Active Raycast HUD Card */}
       {hoveredNode && hudPos ? (
         <div
-          className="pointer-events-none absolute z-30 flex max-w-xs -translate-x-1/2 -translate-y-full flex-col gap-1.5 rounded-xl border border-rose-500/70 bg-[#140512]/95 p-3.5 text-xs text-foreground shadow-[0_0_30px_rgba(225,29,72,0.35)] backdrop-blur-2xl font-mono"
+          className="pointer-events-none absolute z-30 flex max-w-xs -translate-x-1/2 -translate-y-full flex-col gap-1.5 rounded-xl border border-cyan-500/40 bg-[#0a0f1d]/95 p-3.5 text-xs text-foreground shadow-[0_0_25px_rgba(6,182,212,0.25)] backdrop-blur-2xl font-mono"
           style={{ left: hudPos.x, top: hudPos.y - 14 }}
         >
-          <div className="flex items-center justify-between gap-2 border-b border-rose-950/70 pb-1.5">
+          <div className="flex items-center justify-between gap-2 border-b border-white/[0.08] pb-1.5">
             <span
               className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider font-bold"
-              style={{ color: TYPE_PALETTE[hoveredNode.type]?.css || "#FF2E63" }}
+              style={{ color: TYPE_PALETTE[hoveredNode.type]?.css || "#06B6D4" }}
             >
               <span
                 className="size-1.5 rounded-full shadow-[0_0_8px_currentColor]"
-                style={{ backgroundColor: TYPE_PALETTE[hoveredNode.type]?.css || "#FF2E63" }}
+                style={{ backgroundColor: TYPE_PALETTE[hoveredNode.type]?.css || "#06B6D4" }}
               />
               {TYPE_PALETTE[hoveredNode.type]?.label || hoveredNode.type}
             </span>
 
             {hoveredNode.status ? (
-              <span className="rounded bg-rose-500/20 px-1.5 py-0.2 text-[9px] font-mono text-rose-300 uppercase border border-rose-500/40">
+              <span className="rounded bg-cyan-500/20 px-1.5 py-0.2 text-[9px] font-mono text-cyan-300 uppercase border border-cyan-500/30">
                 {hoveredNode.status}
               </span>
             ) : null}
           </div>
 
-          <div className="font-semibold text-foreground text-xs leading-snug font-display">{hoveredNode.label}</div>
+          <div className="font-semibold text-white text-xs leading-snug font-sans">{hoveredNode.label}</div>
           {hoveredNode.description ? (
-            <div className="text-[11px] leading-relaxed text-zinc-400 line-clamp-2">
+            <div className="text-[11px] leading-relaxed text-slate-400 line-clamp-2">
               {hoveredNode.description}
             </div>
           ) : null}
