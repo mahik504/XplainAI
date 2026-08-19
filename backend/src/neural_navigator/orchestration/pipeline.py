@@ -1,7 +1,7 @@
-"""Mode-aware orchestration pipeline with observable stage events.
+"""Explainable Intelligence multi-stage research pipeline.
 
-Uses a lightweight async stage runner (LangGraph-compatible topology conceptually).
-Token streaming still goes through the canonical ``LLMService``.
+Coordinates Query Analysis, Task Decomposition, Tool Execution via ToolRegistry,
+Source/Evidence Extraction, Model Synthesis, Claim Extraction, and 2D/3D Graph Topology Generation.
 """
 
 from __future__ import annotations
@@ -10,9 +10,26 @@ import asyncio
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 
 from neural_navigator.core.config import Settings
+from neural_navigator.domain.models.research import (
+    Assumption,
+    Claim,
+    Contradiction,
+    Evidence,
+    EvidenceGraph,
+    ResearchRun,
+    ResearchStep,
+    Source,
+    SourceType,
+    generate_id,
+)
+from neural_navigator.orchestration.graph_engine import (
+    build_evidence_graph,
+    extract_claims_from_text,
+)
 from neural_navigator.orchestration.modes import RunMode
 from neural_navigator.orchestration.post_analysis import (
     build_counter_perspective,
@@ -20,14 +37,13 @@ from neural_navigator.orchestration.post_analysis import (
 )
 from neural_navigator.orchestration.sources import RetrievedSource, sources_from_tool_results
 from neural_navigator.orchestration.stages import OrchestrationStage
+from neural_navigator.orchestration.tool_registry import ToolRegistry
 from neural_navigator.orchestration.tools import (
     ToolResult,
     detect_math_expression,
     detect_weather_city,
-    run_calculator,
     run_news,
     run_weather,
-    run_web_search,
 )
 from neural_navigator.schemas.base import ChatMessage
 from neural_navigator.services.llm import LLMChunk, LLMService
@@ -62,6 +78,10 @@ class OrchestrationResult:
     research_tasks: list[str] = field(default_factory=list)
     sources_retrieved: int = 0
     sources: list[RetrievedSource] = field(default_factory=list)
+    domain_sources: list[Source] = field(default_factory=list)
+    domain_evidence: list[Evidence] = field(default_factory=list)
+    domain_claims: list[Claim] = field(default_factory=list)
+    domain_graph: EvidenceGraph = field(default_factory=EvidenceGraph)
     missing_context: list[dict[str, Any]] = field(default_factory=list)
     counter_perspective: str | None = None
     stage_timings: list[dict[str, Any]] = field(default_factory=list)
@@ -74,6 +94,10 @@ class OrchestrationResult:
             "research_tasks": self.research_tasks,
             "sources_retrieved": self.sources_retrieved,
             "sources": [item.as_dict() for item in self.sources],
+            "domain_sources": [s.as_dict() for s in self.domain_sources],
+            "domain_evidence": [e.as_dict() for e in self.domain_evidence],
+            "domain_claims": [c.as_dict() for c in self.domain_claims],
+            "domain_graph": self.domain_graph.as_dict(),
             "missing_context": self.missing_context,
             "counter_perspective": self.counter_perspective,
             "stage_timings": self.stage_timings,
@@ -91,7 +115,9 @@ def analyze_query(text: str) -> QueryAnalysis:
     lowered = text.lower()
     words = re.findall(r"[a-z0-9]+", lowered)
     complexity = "simple"
-    if len(words) > 28 or any(token in lowered for token in ("compare", "vs", "versus", "should", "invest", "pros and cons")):
+    if len(words) > 28 or any(
+        token in lowered for token in ("compare", "vs", "versus", "should", "invest", "pros and cons")
+    ):
         complexity = "moderate"
     if any(token in lowered for token in ("research", "evidence", "sources", "cite", "deep", "analyze comprehensively")):
         complexity = "complex"
@@ -150,17 +176,6 @@ def _decompose_research_tasks(text: str, analysis: QueryAnalysis, *, deep: bool)
     return ordered[: 4 if deep else 2]
 
 
-def _sources_count(results: Sequence[ToolResult]) -> int:
-    total = 0
-    for result in results:
-        data = result.data
-        if isinstance(data.get("results"), list):
-            total += len(data["results"])
-        elif result.status == "ok" and result.tool in {"weather", "calculator"}:
-            total += 1
-    return total
-
-
 def _build_augmented_messages(
     messages: Sequence[ChatMessage],
     *,
@@ -169,9 +184,9 @@ def _build_augmented_messages(
     tool_results: Sequence[ToolResult],
 ) -> list[ChatMessage]:
     blocks: list[str] = [
-        "You are XplainAI — a precise assistant. Prefer clear structure.",
-        "When using retrieved sources, cite them as SOURCE RETRIEVED (title/url).",
-        "Do not claim retrieved sources prove factual truth; distinguish SOURCE RETRIEVED from CLAIM SUPPORTED BY SOURCE.",
+        "You are XplainAI ? an explainable AI research workspace. Prefer clear, authoritative structure.",
+        "Ground your answer in the provided observable tool and research sources where available.",
+        "When making claims supported by sources, cite them clearly using bracketed numbers like [1] or [2].",
         f"Active mode: {mode.label} ({mode.description}).",
         f"Query analysis: intent={analysis.intent}, domain={analysis.domain}, complexity={analysis.complexity}.",
     ]
@@ -182,20 +197,73 @@ def _build_augmented_messages(
             blocks.append(f"- [{item.tool}] {item.summary}")
             results = item.data.get("results")
             if isinstance(results, list):
-                for row in results[:4]:
+                for idx, row in enumerate(results[:5]):
                     if not isinstance(row, dict):
                         continue
                     title = str(row.get("title") or "Source")
                     url = str(row.get("url") or "")
                     snippet = str(row.get("snippet") or "")
-                    blocks.append(f"  · {title}: {snippet[:220]}{f' ({url})' if url else ''}")
+                    blocks.append(f"  [{idx + 1}] {title}: {snippet[:260]}{f' ({url})' if url else ''}")
     else:
         blocks.append("No external sources were retrieved for this turn.")
 
     system = ChatMessage(role=Role.SYSTEM, content="\n".join(blocks))
-    # Keep prior messages but drop prior system prompts to avoid stacking.
     history = [message for message in messages if message.role is not Role.SYSTEM]
     return [system, *history]
+
+
+def _extract_domain_sources_and_evidence(
+    tool_results: Sequence[ToolResult],
+) -> tuple[list[Source], list[Evidence]]:
+    sources: list[Source] = []
+    evidence: list[Evidence] = []
+    seen_urls: set[str] = set()
+
+    for tr in tool_results:
+        if tr.status != "ok":
+            continue
+        rows = tr.data.get("results")
+        if isinstance(rows, list):
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                url = str(row.get("url") or "")
+                if url in seen_urls:
+                    continue
+                if url:
+                    seen_urls.add(url)
+
+                src_id = generate_id("src")
+                title = str(row.get("title") or "Research Source")
+                snippet = str(row.get("snippet") or "")
+                domain = str(row.get("domain") or ("wikipedia.org" if "wikipedia" in url else "web"))
+                authority = float(row.get("authority") or 0.85)
+
+                src = Source(
+                    id=src_id,
+                    title=title,
+                    url=url,
+                    domain=domain,
+                    snippet=snippet,
+                    source_type=SourceType.PAPER if "arxiv" in url else SourceType.WEB,
+                    authority_score=authority,
+                )
+                sources.append(src)
+
+                # Formulate distinct evidence item
+                if snippet:
+                    ev_id = generate_id("evi")
+                    ev = Evidence(
+                        id=ev_id,
+                        source_id=src_id,
+                        source_title=title,
+                        source_url=url,
+                        text=snippet,
+                        confidence=authority,
+                    )
+                    evidence.append(ev)
+
+    return sources, evidence
 
 
 async def run_orchestrated_chat(
@@ -210,6 +278,7 @@ async def run_orchestrated_chat(
     max_output_tokens: int | None = None,
 ) -> AsyncIterator[LLMChunk | OrchestrationResult]:
     """Yield stage metadata via ``emit_stage``, then stream LLM chunks, then a final result."""
+    tool_registry = ToolRegistry(settings)
     user_text = _latest_user_text(messages)
     analysis = analyze_query(user_text)
     await emit_stage(OrchestrationStage.QUERY_ANALYZED, analysis.as_dict())
@@ -259,7 +328,7 @@ async def run_orchestrated_chat(
         math_expr = detect_math_expression(user_text)
         if math_expr:
             await emit_stage(OrchestrationStage.TOOL_STARTED, {"tool": "calculator"})
-            calc = await run_calculator(math_expr)
+            calc = await tool_registry.execute("calculator", expression=math_expr)
             tool_results.append(calc)
             await emit_stage(OrchestrationStage.TOOL_COMPLETED, calc.as_dict())
 
@@ -271,21 +340,23 @@ async def run_orchestrated_chat(
             tool_results.append(weather)
             await emit_stage(OrchestrationStage.TOOL_COMPLETED, weather.as_dict())
 
-        # Web search for balanced (selective) / deep (always when research)
+        # Multi-source web & academic search
         should_search = mode is RunMode.DEEP_RESEARCH or (
             mode is RunMode.BALANCED and analysis.needs_research and analysis.intent != "creative"
         )
         if should_search:
             queries = research_tasks or [user_text]
-            limit = 4 if mode is RunMode.DEEP_RESEARCH else 1
+            limit = 3 if mode is RunMode.DEEP_RESEARCH else 1
             for query in queries[:limit]:
                 await emit_stage(OrchestrationStage.TOOL_STARTED, {"tool": "web_search", "query": query})
-                search = await run_web_search(
-                    query,
-                    max_results=5 if mode is RunMode.DEEP_RESEARCH else 3,
-                )
+                search = await tool_registry.execute("web_search", query=query, max_results=4)
                 tool_results.append(search)
                 await emit_stage(OrchestrationStage.TOOL_COMPLETED, search.as_dict())
+
+                if mode is RunMode.DEEP_RESEARCH and analysis.domain == "science":
+                    arxiv_res = await tool_registry.execute("arxiv", query=query)
+                    tool_results.append(arxiv_res)
+                    await emit_stage(OrchestrationStage.TOOL_COMPLETED, arxiv_res.as_dict())
 
             if mode is RunMode.DEEP_RESEARCH and settings.newsdata_api_key is not None:
                 await emit_stage(OrchestrationStage.TOOL_STARTED, {"tool": "news", "query": user_text})
@@ -293,6 +364,7 @@ async def run_orchestrated_chat(
                 tool_results.append(news)
                 await emit_stage(OrchestrationStage.TOOL_COMPLETED, news.as_dict())
 
+    domain_sources, domain_evidence = _extract_domain_sources_and_evidence(tool_results)
     augmented = _build_augmented_messages(
         messages,
         mode=mode,
@@ -333,9 +405,12 @@ async def run_orchestrated_chat(
     await emit_stage(OrchestrationStage.GENERATION_COMPLETED, {"mode": mode.value})
 
     answer_text = "".join(answer_parts)
-    sources = sources_from_tool_results(tool_results)
+    legacy_sources = sources_from_tool_results(tool_results)
 
-    # Parallel-safe post-answer analyses (no extra LLM round-trips; do not block streaming).
+    # Extract claims from generated text and construct full 2D/3D Evidence Graph
+    domain_claims = extract_claims_from_text(answer_text, domain_evidence)
+
+    # Parallel-safe post-answer analyses
     await emit_stage(OrchestrationStage.ANALYSIS_STARTED, {"mode": mode.value})
     missing_items, counter = await asyncio.gather(
         asyncio.to_thread(detect_missing_context, user_text),
@@ -348,12 +423,45 @@ async def run_orchestrated_chat(
         ),
     )
     missing = [item.as_dict() for item in missing_items]
+
+    # Generate assumptions & contradictions if counter perspective found
+    contradictions: list[Contradiction] = []
+    if counter:
+        contradictions.append(
+            Contradiction(
+                id=generate_id("con"),
+                claim_id=domain_claims[0].id if domain_claims else generate_id("clm"),
+                evidence_a_id=domain_evidence[0].id if domain_evidence else "",
+                evidence_b_id="",
+                explanation=counter[:160],
+                severity="moderate",
+            )
+        )
+
+    assumptions: list[Assumption] = [
+        Assumption(
+            id=generate_id("asm"),
+            text=f"Assumes {analysis.domain} query parameters remain stationary across context window.",
+            grounded_score=0.75,
+            risk_level="low",
+        )
+    ]
+
+    domain_graph = build_evidence_graph(
+        sources=domain_sources,
+        evidence=domain_evidence,
+        claims=domain_claims,
+        contradictions=contradictions,
+        assumptions=assumptions,
+    )
+
     await emit_stage(
         OrchestrationStage.ANALYSIS_COMPLETED,
         {
             "missing_context_count": len(missing),
             "has_counter_perspective": counter is not None,
-            "sources_retrieved": len(sources),
+            "sources_retrieved": len(domain_sources),
+            "claims_extracted": len(domain_claims),
         },
     )
 
@@ -362,11 +470,24 @@ async def run_orchestrated_chat(
         query_analysis=analysis,
         tool_results=tool_results,
         research_tasks=research_tasks,
-        sources_retrieved=len(sources),
-        sources=sources,
+        sources_retrieved=len(domain_sources),
+        sources=legacy_sources,
+        domain_sources=domain_sources,
+        domain_evidence=domain_evidence,
+        domain_claims=domain_claims,
+        domain_graph=domain_graph,
         missing_context=missing,
         counter_perspective=counter,
     )
-    await emit_stage(OrchestrationStage.STRUCTURE_READY, {"sources_retrieved": len(sources)})
+
+    await emit_stage(
+        OrchestrationStage.STRUCTURE_READY,
+        {
+            "sources_retrieved": len(domain_sources),
+            "node_count": len(domain_graph.nodes),
+            "edge_count": len(domain_graph.edges),
+            "density": domain_graph.density,
+        },
+    )
     await emit_stage(OrchestrationStage.COMPLETED, result.as_dict())
     yield result

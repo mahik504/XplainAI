@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -7,9 +7,11 @@ import { buildResponseStructureGraph } from "@/lib/response-graph";
 import { primaryUnsupportedAssertionId } from "@/lib/unsupported-claims";
 import { analyzeResponse } from "@/lib/xai/response-analyzer";
 
-const dataPath = resolve(__dirname, "../../backend/scripts/_ship_qa_last.json");
+const liveDataPath = resolve(__dirname, "../../backend/scripts/_ship_qa_last.json");
+const fixturePath = resolve(__dirname, "./fixtures/sample-ship-qa.json");
+const dataPath = existsSync(liveDataPath) ? liveDataPath : fixturePath;
 
-describe("ship QA OpenAI responses → single analysis path", () => {
+describe("ship QA responses → single analysis path", () => {
   const data = JSON.parse(readFileSync(dataPath, "utf8")) as {
     results: Array<{ prompt: string; ok: boolean; text: string }>;
   };

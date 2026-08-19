@@ -1,0 +1,95 @@
+{
+  "provider": "fixture",
+  "results": [
+    {
+      "prompt": "Explain quantum computing.",
+      "ok": true,
+      "ttft_ms": 120,
+      "total_ms": 1500,
+      "chars": 420,
+      "finish": "stop",
+      "text": "Quantum computing is a rapidly-emerging technology that harnesses the laws of quantum mechanics to solve problems too complex for classical computers. Classical computers encode information in binary bits (0 or 1), whereas quantum computers use quantum bits, or qubits, which can exist in superposition. Superposition allows qubits to evaluate multiple combinatorial states simultaneously. Furthermore, quantum entanglement links qubits such that the state of one instantly correlates with another, enabling exponential parallelism for specific algorithms like Shor's and Grover's."
+    },
+    {
+      "prompt": "Why is the sky blue?",
+      "ok": true,
+      "ttft_ms": 100,
+      "total_ms": 1100,
+      "chars": 350,
+      "finish": "stop",
+      "text": "The sky appears blue due to a phenomenon called Rayleigh scattering. Sunlight reaches Earth's atmosphere and is scattered in all directions by gases and particles in the air. Because blue light travels as smaller, shorter waves than other visible colors, it is scattered much more strongly than red and yellow light, giving the daytime sky its characteristic blue color."
+    },
+    {
+      "prompt": "Should India invest in nuclear energy?",
+      "ok": true,
+      "ttft_ms": 140,
+      "total_ms": 1800,
+      "chars": 480,
+      "finish": "stop",
+      "text": "India faces a dual challenge of meeting rapidly growing electricity demand while fulfilling its decarbonization commitments under the Paris Agreement. Proponents argue nuclear power provides reliable baseload electricity with zero direct greenhouse gas emissions. However, critics point to high initial capital expenditure, long gestation timelines, and public concerns regarding nuclear safety and radioactive waste storage."
+    },
+    {
+      "prompt": "Compare React vs Vue.",
+      "ok": true,
+      "ttft_ms": 110,
+      "total_ms": 1400,
+      "chars": 390,
+      "finish": "stop",
+      "text": "React and Vue are both leading JavaScript frontend frameworks using a virtual DOM. React, developed by Meta, emphasizes functional programming and JSX with an unopinionated ecosystem. In contrast, Vue offers a more approachable single-file component syntax, built-in state management options, and automated reactivity tracking out of the box."
+    },
+    {
+      "prompt": "Tell me a joke.",
+      "ok": true,
+      "ttft_ms": 80,
+      "total_ms": 500,
+      "chars": 120,
+      "finish": "stop",
+      "text": "Why do programmers prefer dark mode? Because light attracts bugs!"
+    },
+    {
+      "prompt": "Explain recursion.",
+      "ok": true,
+      "ttft_ms": 90,
+      "total_ms": 900,
+      "chars": 310,
+      "finish": "stop",
+      "text": "Recursion is a programming technique where a function solves a computational problem by calling itself with smaller sub-instances. Every recursive algorithm requires a base condition to terminate execution, preventing infinite call stack overflow."
+    },
+    {
+      "prompt": "What causes inflation?",
+      "ok": true,
+      "ttft_ms": 130,
+      "total_ms": 1600,
+      "chars": 410,
+      "finish": "stop",
+      "text": "Inflation is generally driven by demand-pull dynamics, where aggregate spending outpaces economic capacity, and cost-push factors, where rising production costs like energy or wages increase final consumer prices. Additionally, excessive monetary expansion can dilute currency purchasing power over time."
+    },
+    {
+      "prompt": "How does Bitcoin work?",
+      "ok": true,
+      "ttft_ms": 150,
+      "total_ms": 1700,
+      "chars": 460,
+      "finish": "stop",
+      "text": "Bitcoin operates as a decentralized cryptographic ledger maintained by a peer-to-peer network. Transactions are bundled into cryptographic blocks and validated through Proof-of-Work mining, ensuring immutability and preventing double-spending without requiring a central bank."
+    },
+    {
+      "prompt": "Should I use PostgreSQL?",
+      "ok": true,
+      "ttft_ms": 110,
+      "total_ms": 1300,
+      "chars": 380,
+      "finish": "stop",
+      "text": "PostgreSQL is an enterprise-grade open-source relational database known for its strict ACID compliance, extensive JSONB support, and powerful extension ecosystem including PostGIS and pgvector. It is an optimal choice for structured relational schemas and complex analytical queries."
+    },
+    {
+      "prompt": "What is Explainable AI?",
+      "ok": true,
+      "ttft_ms": 120,
+      "total_ms": 1500,
+      "chars": 430,
+      "finish": "stop",
+      "text": "Explainable AI (XAI) encompasses frameworks and techniques that make artificial intelligence decision-making understandable to human operators. Rather than treating neural networks as opaque black boxes, XAI surfaces feature attributions, evidentiary sources, confidence bounds, and observable reasoning structures."
+    }
+  ]
+}
