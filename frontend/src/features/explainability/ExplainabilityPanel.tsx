@@ -6,6 +6,7 @@ import {
   Box,
   FileText,
   Split,
+  Terminal,
   X,
 } from "lucide-react";
 import React, { useState } from "react";
@@ -13,6 +14,7 @@ import React, { useState } from "react";
 import { NodeInspector } from "@/components/common/NodeInspector";
 import { StructureLegend } from "@/features/demo";
 import { GraphPanel } from "@/features/graph-visualizer";
+import { hudAudio } from "@/features/audio/audio-sfx";
 import type { ClaimFocusMetrics } from "@/lib/claim-focus";
 import type { RetrievedSource } from "@/lib/sources";
 import type { StageEvent } from "@/lib/stage-graph";
@@ -20,6 +22,7 @@ import type { ResponseStructureAnalysis } from "@/lib/xai";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui-store";
 
+import { AgentTerminalTab } from "./AgentTerminalTab";
 import { CounterPerspectiveCard } from "./CounterPerspectiveCard";
 import { MissingContextCard, type MissingContextItem } from "./MissingContextCard";
 import { RetrievedSourcesCard } from "./RetrievedSourcesCard";
@@ -49,7 +52,7 @@ interface ExplainabilityPanelProps {
   selectedNodeId: string | null;
 }
 
-type TabType = "topology" | "sources" | "signals" | "dialectic";
+type TabType = "topology" | "sources" | "signals" | "dialectic" | "terminal";
 
 export function ExplainabilityPanel({
   className,
@@ -80,6 +83,11 @@ export function ExplainabilityPanel({
     Boolean(responseAnalysis && responseAnalysis.score.sentenceCount > 0) &&
     (showingStructure || claimFocusActive);
 
+  const handleTabChange = (tab: TabType) => {
+    hudAudio.playClick(1400);
+    setActiveTab(tab);
+  };
+
   return (
     <aside
       className={cn(
@@ -88,47 +96,56 @@ export function ExplainabilityPanel({
       )}
     >
       {/* Header & Tabs */}
-      <header className="shrink-0 border-b border-rose-950/60 bg-[#0d040c]/90 px-3.5 py-2.5 backdrop-blur-xl">
+      <header className="shrink-0 border-b border-rose-950/60 bg-[#0d040c]/90 px-3 py-2 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-display text-xs font-semibold tracking-tight text-foreground">
-              {claimFocusActive ? "Claim Verification" : "Evidence & Structure"}
+            <span className="font-mono text-xs font-bold tracking-tight text-rose-300">
+              {claimFocusActive ? "CLAIM VERIFICATION" : "EXPLAINABILITY HUD"}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-lg border border-rose-950/80 bg-black/40 p-0.5 font-mono">
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5 rounded-lg border border-rose-950/80 bg-black/50 p-0.5 font-mono">
               <TabButton
                 active={activeTab === "topology"}
-                onClick={() => setActiveTab("topology")}
+                onClick={() => handleTabChange("topology")}
                 icon={Box}
                 label="3D Graph"
                 badge={nodes.length > 0 ? String(nodes.length) : undefined}
               />
               <TabButton
                 active={activeTab === "sources"}
-                onClick={() => setActiveTab("sources")}
+                onClick={() => handleTabChange("sources")}
                 icon={BookOpen}
                 label="Sources"
                 badge={retrievedSources.length > 0 ? String(retrievedSources.length) : undefined}
               />
               <TabButton
                 active={activeTab === "signals"}
-                onClick={() => setActiveTab("signals")}
+                onClick={() => handleTabChange("signals")}
                 icon={Activity}
                 label="Signals"
               />
               <TabButton
                 active={activeTab === "dialectic"}
-                onClick={() => setActiveTab("dialectic")}
+                onClick={() => handleTabChange("dialectic")}
                 icon={Split}
                 label="Dialectic"
+              />
+              <TabButton
+                active={activeTab === "terminal"}
+                onClick={() => handleTabChange("terminal")}
+                icon={Terminal}
+                label="Terminal"
               />
             </div>
 
             <button
               type="button"
-              onClick={() => setInspectorOpen(false)}
+              onClick={() => {
+                hudAudio.playClick();
+                setInspectorOpen(false);
+              }}
               className="flex size-7 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-950/50 hover:text-rose-200"
               title="Close panel"
             >
@@ -209,6 +226,12 @@ export function ExplainabilityPanel({
           <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
             <MissingContextCard items={missingContext} />
             <CounterPerspectiveCard text={counterPerspective} />
+          </div>
+        )}
+
+        {activeTab === "terminal" && (
+          <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
+            <AgentTerminalTab stageEvents={stageEvents} mode={runMode} />
           </div>
         )}
       </div>

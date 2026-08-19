@@ -9,11 +9,11 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from
 
 import { MessageMarkdown } from "@/components/common/MessageMarkdown";
 import { Button } from "@/components/ui/button";
+import { hudAudio } from "@/features/audio/audio-sfx";
 import type { RunMode } from "@/lib/run-mode";
 import type { StageEvent } from "@/lib/stage-graph";
 import type { ResponseStructureAnalysis } from "@/lib/xai";
 import { cn } from "@/lib/utils";
-import { useConversationStore } from "@/stores/conversation-store";
 import { useUIStore } from "@/stores/ui-store";
 
 import { AnimatedAnnotatedMessage } from "./AnimatedAnnotatedMessage";
@@ -97,51 +97,29 @@ export function ChatPanel({
   const clearComposerPrefill = useUIStore((state) => state.clearComposerPrefill);
   const evidenceDemandHighlight = useUIStore((state) => state.evidenceDemandHighlight);
   const setEvidenceDemandHighlight = useUIStore((state) => state.setEvidenceDemandHighlight);
-  const activeConversationId = useConversationStore((state) => state.activeConversationId);
-  const canSend = draft.trim().length > 0 && !disabled && onSend !== undefined;
-
-  useLayoutEffect(() => {
-    const composer = composerRef.current;
-    if (!composer) return;
-    composer.style.height = "0px";
-    composer.style.height = `${String(Math.min(composer.scrollHeight, 180))}px`;
-  }, [draft]);
-
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, isStreaming]);
-
-  useEffect(() => {
-    setDraft("");
-    setEvidenceDemandHighlight(false);
-  }, [activeConversationId, setEvidenceDemandHighlight]);
 
   useEffect(() => {
     if (!composerPrefill) return;
-    const text = composerPrefill;
-    setDraft(text);
+    setDraft(composerPrefill);
     clearComposerPrefill();
-    setEvidenceDemandHighlight(true);
-
-    const focusComposer = () => {
-      const composer = composerRef.current;
-      if (!composer) return;
-      composer.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      composer.focus({ preventScroll: true });
-      const len = text.length;
-      composer.setSelectionRange(len, len);
-    };
-
     requestAnimationFrame(() => {
-      requestAnimationFrame(focusComposer);
+      composerRef.current?.focus();
     });
-  }, [clearComposerPrefill, composerPrefill, setEvidenceDemandHighlight]);
+  }, [composerPrefill, clearComposerPrefill]);
+
+  useLayoutEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: isStreaming ? "auto" : "smooth" });
+  }, [messages, isStreaming]);
+
+  const canSend = !disabled && !isStreaming && draft.trim().length > 0;
 
   const submit = () => {
     if (!canSend) return;
-    onSend(draft.trim());
+    const value = draft.trim();
     setDraft("");
     setEvidenceDemandHighlight(false);
+    hudAudio.playClick(1700);
+    onSend?.(value);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -167,7 +145,7 @@ export function ChatPanel({
           <div className="flex min-h-full flex-col items-center justify-center px-4 py-12">
             <div className="w-full max-w-2xl space-y-8 text-center">
               <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-mono text-rose-300">
+                <div className="inline-flex items-center gap-2 rounded-full border border-rose-500/40 bg-rose-500/10 px-3.5 py-1 text-xs font-mono text-rose-300 shadow-[0_0_12px_rgba(225,29,72,0.2)]">
                   <span className="size-1.5 rounded-full bg-rose-400 animate-pulse" />
                   <span>RESEARCH TELEMETRY ACTIVE</span>
                 </div>
@@ -187,14 +165,17 @@ export function ChatPanel({
                     key={idx}
                     type="button"
                     disabled={disabled}
-                    onClick={() => onSend?.(item.prompt)}
-                    className="group flex flex-col justify-between rounded-xl border border-rose-950/70 bg-[#0e050c]/80 p-4 transition-all hover:border-rose-500/50 hover:bg-[#160814] hover:shadow-[0_4px_20px_rgba(225,29,72,0.15)] active:scale-[0.99]"
+                    onClick={() => {
+                      hudAudio.playChirp();
+                      onSend?.(item.prompt);
+                    }}
+                    className="hud-bracket-box group flex flex-col justify-between rounded-xl border border-rose-950/70 bg-[#0e050c]/80 p-4 transition-all hover:border-rose-500/60 hover:bg-[#160814] hover:shadow-[0_4px_25px_rgba(225,29,72,0.2)] active:scale-[0.99]"
                   >
                     <div>
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-rose-400/80 font-semibold">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-rose-400/80 font-bold">
                         {item.category}
                       </span>
-                      <p className="mt-1 text-xs font-medium text-foreground group-hover:text-rose-200 transition-colors">
+                      <p className="mt-1 text-xs font-semibold text-foreground group-hover:text-rose-200 transition-colors">
                         {item.title}
                       </p>
                     </div>
