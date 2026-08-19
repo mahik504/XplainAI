@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import {
   ArrowUp,
+  Camera,
   Copy,
+  Mic,
   RotateCcw,
   Square,
 } from "lucide-react";
@@ -313,6 +315,34 @@ export function ChatPanel({
                     disabled={disabled || isStreaming}
                   />
                 ) : null}
+
+                {/* Voice Input Trigger */}
+                <button
+                  type="button"
+                  disabled={disabled || isStreaming}
+                  onClick={() => {
+                    hudAudio.playClick(1400);
+                    useUIStore.getState().setVoiceModalOpen(true);
+                  }}
+                  className="flex size-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-300 disabled:opacity-40"
+                  title="Voice input with audio waveform"
+                >
+                  <Mic className="size-3.5" />
+                </button>
+
+                {/* Optical Vision Scanner Trigger */}
+                <button
+                  type="button"
+                  disabled={disabled || isStreaming}
+                  onClick={() => {
+                    hudAudio.playClick(1400);
+                    useUIStore.getState().setVisionModalOpen(true);
+                  }}
+                  className="flex size-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-300 disabled:opacity-40"
+                  title="Optical vision camera scanner"
+                >
+                  <Camera className="size-3.5" />
+                </button>
               </div>
 
               <div className="flex items-center gap-2">

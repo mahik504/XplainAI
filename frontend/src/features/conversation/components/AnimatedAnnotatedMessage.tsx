@@ -22,10 +22,10 @@ const CATEGORY_STYLE: Record<
   { border: string; bg: string; label: string; text: string }
 > = {
   claim: {
-    border: "border-l-rose-500",
-    bg: "bg-rose-950/30",
+    border: "border-l-cyan-400",
+    bg: "bg-cyan-950/30",
     label: "Assertion",
-    text: "text-rose-400",
+    text: "text-cyan-400",
   },
   evidence: {
     border: "border-l-emerald-500",
@@ -40,10 +40,10 @@ const CATEGORY_STYLE: Record<
     text: "text-indigo-400",
   },
   example: {
-    border: "border-l-orange-500",
-    bg: "bg-orange-950/30",
+    border: "border-l-sky-500",
+    bg: "bg-sky-950/30",
     label: "Example",
-    text: "text-orange-400",
+    text: "text-sky-400",
   },
   hedge: {
     border: "border-l-amber-500",
@@ -52,16 +52,16 @@ const CATEGORY_STYLE: Record<
     text: "text-amber-400",
   },
   conclusion: {
-    border: "border-l-pink-500",
-    bg: "bg-pink-950/30",
+    border: "border-l-indigo-400",
+    bg: "bg-indigo-950/30",
     label: "Conclusion",
-    text: "text-pink-400",
+    text: "text-indigo-400",
   },
   neutral: {
-    border: "border-l-zinc-700",
-    bg: "bg-zinc-950/20",
+    border: "border-l-slate-700",
+    bg: "bg-slate-950/20",
     label: "Neutral",
-    text: "text-zinc-400",
+    text: "text-slate-400",
   },
 };
 

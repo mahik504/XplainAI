@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import { Outlet } from "react-router-dom";
 
 import { AmbientShaderBackground } from "@/components/common/AmbientShaderBackground";
@@ -16,13 +16,14 @@ import { TopNav } from "./TopNav";
 export function AppShell() {
   useSessionConnection();
 
-  const [voiceOpen, setVoiceOpen] = useState(false);
-  const [visionOpen, setVisionOpen] = useState(false);
-
   const glassStrength = useUIStore((state) => state.glassStrength);
   const mobileNavOpen = useUIStore((state) => state.mobileNavOpen);
   const setMobileNavOpen = useUIStore((state) => state.setMobileNavOpen);
   const setComposerPrefill = useUIStore((state) => state.setComposerPrefill);
+  const voiceModalOpen = useUIStore((state) => state.voiceModalOpen);
+  const visionModalOpen = useUIStore((state) => state.visionModalOpen);
+  const setVoiceModalOpen = useUIStore((state) => state.setVoiceModalOpen);
+  const setVisionModalOpen = useUIStore((state) => state.setVisionModalOpen);
   const connection = useSessionStore((state) => state.connection);
 
   const handleVoiceTranscribed = (text: string) => {
@@ -41,18 +42,14 @@ export function AppShell() {
       <AmbientShaderBackground />
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <TopNav
-          connection={connection}
-          onOpenVoice={() => setVoiceOpen(true)}
-          onOpenVision={() => setVisionOpen(true)}
-        />
+        <TopNav connection={connection} />
         <main className="relative min-h-0 flex-1 px-2 pt-2 pb-2 sm:px-3 sm:pb-3">
           <Outlet />
         </main>
       </div>
 
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent side="left" className="w-[min(20rem,88vw)] border-border/50 bg-[#060206] p-0">
+        <SheetContent side="left" className="w-[min(20rem,88vw)] border-white/10 bg-[#070b16] p-0">
           <SheetHeader className="sr-only">
             <SheetTitle>Conversation history</SheetTitle>
           </SheetHeader>
@@ -63,14 +60,14 @@ export function AppShell() {
       <SettingsDrawer />
 
       <VoiceInputModal
-        isOpen={voiceOpen}
-        onClose={() => setVoiceOpen(false)}
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
         onTranscribed={handleVoiceTranscribed}
       />
 
       <HolographicVisionScanner
-        isOpen={visionOpen}
-        onClose={() => setVisionOpen(false)}
+        isOpen={visionModalOpen}
+        onClose={() => setVisionModalOpen(false)}
         onCapture={handleVisionCaptured}
       />
     </div>

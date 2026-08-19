@@ -1,4 +1,4 @@
-import { Camera, Eye, Mic, PanelLeft, Settings, Volume2, VolumeX } from "lucide-react";
+import { Eye, PanelLeft, Settings, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ModelSelector } from "@/components/brand/ModelSelector";
@@ -14,15 +14,9 @@ export type ConnectionState = "offline" | "connecting" | "live";
 
 interface TopNavProps {
   connection?: ConnectionState;
-  onOpenVoice?: () => void;
-  onOpenVision?: () => void;
 }
 
-export function TopNav({
-  connection = "offline",
-  onOpenVoice = () => {},
-  onOpenVision = () => {},
-}: TopNavProps) {
+export function TopNav({ connection = "offline" }: TopNavProps) {
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const setMobileNavOpen = useUIStore((state) => state.setMobileNavOpen);
   const setSettingsOpen = useUIStore((state) => state.setSettingsOpen);
@@ -112,33 +106,8 @@ export function TopNav({
       </div>
 
       {/* Right: Quick Tools, Model Selector, Analysis Pill, Settings */}
+      {/* Right: Audio SFX Toggle, Analysis Pill, Model Selector, Settings */}
       <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Voice Trigger */}
-        <button
-          type="button"
-          onClick={() => {
-            hudAudio.playClick(1400);
-            onOpenVoice();
-          }}
-          className="flex size-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-300 hover:border hover:border-cyan-500/30"
-          title="Voice input with audio waveform"
-        >
-          <Mic className="size-4" />
-        </button>
-
-        {/* Vision Scanner Trigger */}
-        <button
-          type="button"
-          onClick={() => {
-            hudAudio.playClick(1400);
-            onOpenVision();
-          }}
-          className="flex size-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-cyan-500/10 hover:text-cyan-300 hover:border hover:border-cyan-500/30"
-          title="Optical vision camera scanner"
-        >
-          <Camera className="size-4" />
-        </button>
-
         {/* Audio SFX Toggle */}
         <button
           type="button"

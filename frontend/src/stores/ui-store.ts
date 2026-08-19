@@ -53,6 +53,8 @@ interface UIState {
   showcaseRunId: number;
   demoLandingDismissed: boolean;
   inspectorOpen: boolean;
+  voiceModalOpen: boolean;
+  visionModalOpen: boolean;
   saveHistoryEnabled: boolean;
   customApiKey: string;
   customApiBase: string;
@@ -62,6 +64,8 @@ interface UIState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   toggleInspector: () => void;
   setInspectorOpen: (open: boolean) => void;
+  setVoiceModalOpen: (open: boolean) => void;
+  setVisionModalOpen: (open: boolean) => void;
   setSaveHistoryEnabled: (enabled: boolean) => void;
   setCustomApiConfig: (config: { apiKey?: string; apiBase?: string; modelId?: string }) => void;
   setMobileNavOpen: (open: boolean) => void;
@@ -113,6 +117,8 @@ export const useUIStore = create<UIState>()((set) => ({
   composerPrefill: null,
   showcaseRunId: 0,
   inspectorOpen: false,
+  voiceModalOpen: false,
+  visionModalOpen: false,
   saveHistoryEnabled: true,
   customApiKey: "",
   customApiBase: "",
@@ -132,6 +138,12 @@ export const useUIStore = create<UIState>()((set) => ({
   },
   setInspectorOpen: (open) => {
     set({ inspectorOpen: open });
+  },
+  setVoiceModalOpen: (open) => {
+    set({ voiceModalOpen: open });
+  },
+  setVisionModalOpen: (open) => {
+    set({ visionModalOpen: open });
   },
   setSaveHistoryEnabled: (enabled) => {
     set({ saveHistoryEnabled: enabled });

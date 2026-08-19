@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Mic, MicOff, X } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { hudAudio } from "@/features/audio/audio-sfx";
@@ -12,28 +12,26 @@ interface VoiceInputModalProps {
   onTranscribed: (text: string) => void;
 }
 
-export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
-  isOpen,
-  onClose,
-  onTranscribed,
-}) => {
+export const VoiceInputModal = ({ isOpen, onClose, onTranscribed }: VoiceInputModalProps) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      setTranscript("");
+      setErrorMsg(null);
+      startVoice();
+    } else {
       stopVoice();
-      return;
     }
-
-    hudAudio.playSweep();
-    startVoice();
 
     return () => {
       stopVoice();
@@ -41,67 +39,61 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
   }, [isOpen]);
 
   const startVoice = async () => {
+    hudAudio.playSweep();
     setErrorMsg(null);
-    setTranscript("");
+    setIsListening(true);
 
-    // 1. Initialize Speech Recognition
-    const SpeechRecClass =
+    // 1. Speech Recognition Setup (Web Speech API)
+    const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    if (!SpeechRecClass) {
-      setErrorMsg("Web Speech API not supported in this browser. Please type or use Chrome/Edge.");
-    } else {
+    if (SpeechRecognition) {
       try {
-        const recognition = new SpeechRecClass();
+        const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = "en-US";
 
-        recognition.onstart = () => {
-          setIsListening(true);
-          hudAudio.playChirp();
-        };
-
         recognition.onresult = (event: any) => {
-          let currentText = "";
-          for (let i = 0; i < event.results.length; i++) {
-            currentText += event.results[i][0].transcript;
+          let currentTranscript = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
           }
-          setTranscript(currentText);
-          hudAudio.playClick(1400);
+          setTranscript((prev) => (prev ? `${prev} ${currentTranscript}` : currentTranscript));
         };
 
-        recognition.onerror = (event: any) => {
-          console.warn("Speech recognition error:", event.error);
-          if (event.error !== "no-speech") {
-            setErrorMsg(`Voice input status: ${event.error}`);
+        recognition.onerror = (e: any) => {
+          console.warn("Speech recognition error:", e);
+          if (e.error === "not-allowed") {
+            setErrorMsg("Microphone permission denied. Please allow audio access.");
           }
-        };
-
-        recognition.onend = () => {
-          setIsListening(false);
         };
 
         recognition.start();
         recognitionRef.current = recognition;
       } catch (err) {
-        console.error("SpeechRecognition start failed:", err);
+        console.warn("Could not start SpeechRecognition:", err);
       }
+    } else {
+      setErrorMsg("Web Speech API not supported in this browser. You can type directly.");
     }
 
-    // 2. Initialize Audio Reactive Waveform Analyzer
+    // 2. Web Audio Spectrum Waveform Visualizer
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioStreamRef.current = stream;
 
-        const AudioCtxClass =
-          window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtxClass) {
-          const audioCtx = new AudioCtxClass();
-          const source = audioCtx.createMediaStreamSource(stream);
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const audioCtx = new AudioCtx();
+          audioContextRef.current = audioCtx;
+
           const analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 128;
+          analyser.fftSize = 64;
+          analyserRef.current = analyser;
+
+          const source = audioCtx.createMediaStreamSource(stream);
           source.connect(analyser);
 
           const bufferLength = analyser.frequencyBinCount;
@@ -125,11 +117,11 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
               const val = dataArray[i] ?? 0;
               const barHeight = (val / 255) * canvas.height * 0.9;
 
-              // Glowing tactical gradient
+              // Glowing cyan/azure gradient
               const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-              gradient.addColorStop(0, "rgba(225, 29, 72, 0.2)");
-              gradient.addColorStop(0.5, "rgba(255, 46, 99, 0.8)");
-              gradient.addColorStop(1, "rgba(6, 182, 212, 1.0)");
+              gradient.addColorStop(0, "rgba(6, 182, 212, 0.2)");
+              gradient.addColorStop(0.5, "rgba(0, 240, 255, 0.8)");
+              gradient.addColorStop(1, "rgba(99, 102, 241, 1.0)");
 
               ctx.fillStyle = gradient;
               ctx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
@@ -182,27 +174,27 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
           initial={{ opacity: 0, scale: 0.92, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 10 }}
-          className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-rose-500/60 bg-[#0c040b]/95 p-6 shadow-[0_0_50px_rgba(225,29,72,0.3)] backdrop-blur-2xl"
+          className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-cyan-500/40 bg-[#0a0f1d]/95 p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] backdrop-blur-2xl"
         >
-          {/* Top HUD Header */}
-          <div className="flex items-center justify-between border-b border-rose-950/70 pb-3">
+          {/* Top Header */}
+          <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
             <div className="flex items-center gap-2">
               <div className="relative flex size-3 items-center justify-center">
                 <span
                   className={cn(
                     "absolute inline-flex size-full rounded-full opacity-75",
-                    isListening ? "animate-ping bg-rose-500" : "bg-zinc-600",
+                    isListening ? "animate-ping bg-cyan-400" : "bg-zinc-600",
                   )}
                 />
                 <span
                   className={cn(
                     "relative inline-flex size-2 rounded-full",
-                    isListening ? "bg-rose-400" : "bg-zinc-500",
+                    isListening ? "bg-cyan-300" : "bg-zinc-500",
                   )}
                 />
               </div>
-              <span className="font-mono text-xs font-bold tracking-widest text-rose-300 uppercase">
-                JARVIS VOICE COCKPIT · AUDIO TELEMETRY
+              <span className="font-mono text-xs font-bold tracking-widest text-cyan-300 uppercase">
+                VOICE TELEMETRY INPUT
               </span>
             </div>
 
@@ -212,7 +204,7 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
                 hudAudio.playClick();
                 onClose();
               }}
-              className="rounded-lg p-1 text-zinc-400 transition hover:bg-rose-950/50 hover:text-rose-200"
+              className="rounded-lg p-1 text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
             >
               <X className="size-4" />
             </button>
@@ -220,7 +212,7 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
 
           {/* Audio Waveform Canvas */}
           <div className="my-5 flex flex-col items-center justify-center gap-3">
-            <div className="relative h-24 w-full overflow-hidden rounded-xl border border-rose-950/80 bg-black/60 p-2 shadow-inner">
+            <div className="relative h-24 w-full overflow-hidden rounded-xl border border-white/[0.08] bg-black/60 p-2 shadow-inner">
               <canvas
                 ref={canvasRef}
                 width={400}
@@ -229,18 +221,18 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
               />
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 {!isListening && (
-                  <span className="font-mono text-xs text-zinc-500">Microphone standby</span>
+                  <span className="font-mono text-xs text-slate-500">Microphone standby</span>
                 )}
               </div>
             </div>
 
             {/* Transcript Preview */}
-            <div className="min-h-[70px] w-full rounded-xl border border-rose-950/70 bg-[#140612]/60 p-3 font-mono text-xs leading-relaxed text-foreground/90">
+            <div className="min-h-[70px] w-full rounded-xl border border-white/[0.08] bg-[#0d1322]/80 p-3 font-mono text-xs leading-relaxed text-foreground/90">
               {transcript ? (
-                <span className="text-rose-100">{transcript}</span>
+                <span className="text-cyan-100">{transcript}</span>
               ) : (
-                <span className="text-zinc-500 italic">
-                  {isListening ? "Listening... Speak your research inquiry..." : "Click Start to speak"}
+                <span className="text-slate-500 italic">
+                  {isListening ? "Listening... Speak your research inquiry..." : "Click Resume to speak"}
                 </span>
               )}
             </div>
@@ -251,7 +243,7 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between gap-3 border-t border-rose-950/70 pt-4">
+          <div className="flex items-center justify-between gap-3 border-t border-white/[0.08] pt-4">
             <Button
               type="button"
               variant="outline"
@@ -267,11 +259,11 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
               className={cn(
                 "gap-2 font-mono text-xs",
                 isListening
-                  ? "border-rose-500/60 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
-                  : "border-rose-950/80 text-zinc-400 hover:bg-rose-950/40 hover:text-rose-200",
+                  ? "border-cyan-500/50 bg-cyan-500/15 text-cyan-300 hover:bg-cyan-500/25"
+                  : "border-white/10 text-slate-400 hover:bg-white/[0.06] hover:text-white",
               )}
             >
-              {isListening ? <Mic className="size-3.5 text-rose-400" /> : <MicOff className="size-3.5" />}
+              {isListening ? <Mic className="size-3.5 text-cyan-400" /> : <MicOff className="size-3.5" />}
               <span>{isListening ? "Pause Listening" : "Resume Voice"}</span>
             </Button>
 
@@ -284,7 +276,7 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
                   hudAudio.playClick();
                   onClose();
                 }}
-                className="font-mono text-xs text-zinc-400 hover:bg-rose-950/40 hover:text-rose-200"
+                className="font-mono text-xs text-slate-400 hover:bg-white/[0.06] hover:text-white"
               >
                 Cancel
               </Button>
@@ -293,7 +285,7 @@ export const VoiceInputModal: React.FC<VoiceInputModalProps> = ({
                 size="sm"
                 disabled={!transcript.trim()}
                 onClick={handleApply}
-                className="gap-2 border border-rose-500/60 bg-rose-600 font-mono text-xs text-white hover:bg-rose-500 shadow-[0_0_20px_rgba(225,29,72,0.4)]"
+                className="gap-2 border border-cyan-500/50 bg-gradient-to-r from-cyan-500 to-indigo-600 font-mono text-xs text-white hover:from-cyan-400 hover:to-indigo-500 shadow-[0_0_20px_rgba(6,182,212,0.35)]"
               >
                 <Check className="size-3.5" />
                 <span>Inject to Inquiry</span>
