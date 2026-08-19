@@ -22,18 +22,18 @@ const CATEGORY_STYLE: Record<
   { border: string; bg: string; label: string }
 > = {
   claim: {
-    border: "border-l-neon-cyan",
-    bg: "bg-neon-cyan/10",
+    border: "border-l-amber-400",
+    bg: "bg-amber-400/10",
     label: "Assertion",
   },
   evidence: {
-    border: "border-l-neon-emerald",
-    bg: "bg-neon-emerald/10",
-    label: "Response evidence marker",
+    border: "border-l-emerald-400",
+    bg: "bg-emerald-400/10",
+    label: "Empirical Evidence",
   },
   reasoning: {
-    border: "border-l-neon-violet",
-    bg: "bg-neon-violet/10",
+    border: "border-l-indigo-400",
+    bg: "bg-indigo-400/10",
     label: "Connector",
   },
   example: {
@@ -42,18 +42,18 @@ const CATEGORY_STYLE: Record<
     label: "Example",
   },
   hedge: {
-    border: "border-l-neon-amber",
-    bg: "bg-neon-amber/10",
+    border: "border-l-amber-300",
+    bg: "bg-amber-300/10",
     label: "Uncertainty",
   },
   conclusion: {
-    border: "border-l-pink-400",
-    bg: "bg-pink-400/10",
+    border: "border-l-rose-400",
+    bg: "bg-rose-400/10",
     label: "Conclusion",
   },
   neutral: {
-    border: "border-l-muted-foreground/50",
-    bg: "bg-white/[0.03]",
+    border: "border-l-zinc-700",
+    bg: "bg-white/[0.02]",
     label: "Neutral",
   },
 };

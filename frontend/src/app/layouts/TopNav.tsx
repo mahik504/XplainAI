@@ -89,20 +89,20 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
         <div ref={brandRef} className="relative">
           <button
             type="button"
-            className="group flex items-center gap-2.5 rounded-xl px-1.5 py-1 transition hover:bg-white/[0.04]"
+            className="group flex items-center gap-2.5 rounded-xl px-1.5 py-1 transition hover:bg-white/[0.04] active:scale-95"
             onClick={() => {
               setBrandOpen((value) => !value);
             }}
             aria-haspopup="menu"
             aria-expanded={brandOpen}
           >
-            <XplainAiLogo size={28} className="group-hover:drop-shadow-[0_0_10px_oklch(0.72_0.15_220_/_45%)]" />
+            <XplainAiLogo size={30} className="group-hover:drop-shadow-[0_0_12px_rgba(245,158,11,0.5)]" />
             <span className="text-left">
               <span className="block font-display text-[15px] font-semibold tracking-tight text-foreground">
                 XplainAI
               </span>
-              <span className="hidden text-[11px] text-muted-foreground sm:block">
-                Explainable AI workspace
+              <span className="hidden text-[11px] font-mono text-muted-foreground sm:block">
+                Research Studio 2.0
               </span>
             </span>
             <span

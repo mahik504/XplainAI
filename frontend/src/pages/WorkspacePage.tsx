@@ -268,7 +268,6 @@ export function WorkspacePage() {
     <ExplainabilityPanel
       className="size-full"
       isStreaming={isStreaming}
-      phase={phase}
       runMode={runMode}
       stageEvents={stageEvents}
       nodes={displayGraph.nodes}

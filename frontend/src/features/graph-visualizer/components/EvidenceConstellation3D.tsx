@@ -34,13 +34,13 @@ interface EvidenceConstellation3DProps {
   className?: string;
 }
 
-const TYPE_COLORS: Record<string, number> = {
-  source: 0x06b6d4, // Cyan
-  evidence: 0x10b981, // Emerald
-  claim: 0x8b5cf6, // Violet
-  inference: 0x3b82f6, // Blue
-  assumption: 0xf59e0b, // Amber
-  conclusion: 0xec4899, // Pink
+const TYPE_PALETTE: Record<string, { hex: number; css: string; label: string }> = {
+  claim: { hex: 0xf59e0b, css: "#F59E0B", label: "Assertion" },
+  evidence: { hex: 0x10b981, css: "#10B981", label: "Evidence" },
+  source: { hex: 0x38bdf8, css: "#38BDF8", label: "Source" },
+  inference: { hex: 0x818cf8, css: "#818CF8", label: "Inference" },
+  assumption: { hex: 0xf43f5e, css: "#F43F5E", label: "Assumption" },
+  conclusion: { hex: 0xe26d5c, css: "#E26D5C", label: "Conclusion" },
 };
 
 export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = ({
@@ -62,7 +62,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
 
   const resetCamera = useCallback(() => {
     if (cameraRef.current && controlsRef.current) {
-      cameraRef.current.position.set(0, 40, 180);
+      cameraRef.current.position.set(0, 35, 175);
       controlsRef.current.target.set(0, 0, 0);
       controlsRef.current.update();
     }
@@ -74,108 +74,109 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     const width = container.clientWidth || 600;
     const height = container.clientHeight || 400;
 
-    // 1. Scene & Camera
+    // 1. Scene & Deep Atmospheric Fog
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x09090b, 0.003);
+    scene.fog = new THREE.FogExp2(0x08080a, 0.0035);
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-    camera.position.set(0, 40, 180);
+    const camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 1000);
+    camera.position.set(0, 35, 175);
     cameraRef.current = camera;
 
-    // 2. Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // 2. High-Fidelity WebGL Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setClearColor(0x09090b, 1);
+    renderer.setClearColor(0x08080a, 1);
     container.replaceChildren(renderer.domElement);
     rendererRef.current = renderer;
 
-    // 3. Orbit Controls
+    // 3. Smooth Damped Orbit Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.06;
-    controls.maxDistance = 350;
-    controls.minDistance = 20;
+    controls.dampingFactor = 0.07;
+    controls.maxDistance = 320;
+    controls.minDistance = 25;
     controlsRef.current = controls;
 
-    // 4. Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    // 4. Calibrated Lighting Rig
+    const ambientLight = new THREE.AmbientLight(0xf4f4f0, 0.85);
     scene.add(ambientLight);
 
-    const pointLight = new THREE.PointLight(0x8b5cf6, 2, 300);
-    pointLight.position.set(0, 50, 50);
-    scene.add(pointLight);
+    const amberKeyLight = new THREE.PointLight(0xf59e0b, 2.5, 350);
+    amberKeyLight.position.set(20, 60, 60);
+    scene.add(amberKeyLight);
 
-    const cyanLight = new THREE.PointLight(0x06b6d4, 1.5, 300);
-    cyanLight.position.set(-60, -30, 40);
-    scene.add(cyanLight);
+    const jadeRimLight = new THREE.PointLight(0x10b981, 1.8, 300);
+    jadeRimLight.position.set(-60, -30, 40);
+    scene.add(jadeRimLight);
 
-    // 5. Starfield Particles
-    const starCount = 350;
-    const starGeometry = new THREE.BufferGeometry();
-    const starPositions = new Float32Array(starCount * 3);
+    // 5. Multi-Layer Cosmic Dust Particles
+    const starCount = 450;
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i += 3) {
-      starPositions[i] = (Math.random() - 0.5) * 500;
-      starPositions[i + 1] = (Math.random() - 0.5) * 500;
-      starPositions[i + 2] = (Math.random() - 0.5) * 500;
+      starPos[i] = (Math.random() - 0.5) * 550;
+      starPos[i + 1] = (Math.random() - 0.5) * 550;
+      starPos[i + 2] = (Math.random() - 0.5) * 550;
     }
-    starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
-    const starMaterial = new THREE.PointsMaterial({
+    starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
+    const starMat = new THREE.PointsMaterial({
       color: 0x71717a,
-      size: 1.5,
+      size: 1.4,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.45,
     });
-    const stars = new THREE.Points(starGeometry, starMaterial);
-    scene.add(stars);
+    const starField = new THREE.Points(starGeo, starMat);
+    scene.add(starField);
 
-    // 6. Build Node Meshes
+    // 6. Multi-tier Spatial Node Mapping
     nodeMeshesRef.current.clear();
-    const nodeMap = new Map<string, THREE.Vector3>();
+    const nodePosMap = new Map<string, THREE.Vector3>();
 
     nodes.forEach((n, idx) => {
       let x = 0, y = 0, z = 0;
       if (n.position_3d && n.position_3d.length === 3) {
         [x, y, z] = n.position_3d;
       } else {
-        // Fallback procedural layout
-        const angle = (2 * Math.PI * idx) / Math.max(1, nodes.length);
-        const radius = n.type === "source" ? 90 : n.type === "evidence" ? 60 : 30;
+        const count = Math.max(1, nodes.length);
+        const angle = (2 * Math.PI * idx) / count;
+        const radius = n.type === "source" ? 85 : n.type === "evidence" ? 55 : 25;
         x = radius * Math.cos(angle);
         y = radius * Math.sin(angle);
-        z = n.type === "source" ? 30 : n.type === "evidence" ? 15 : 0;
+        z = n.type === "source" ? 40 : n.type === "evidence" ? 20 : 0;
       }
 
       const nodePos = new THREE.Vector3(x, y, z);
-      nodeMap.set(n.id, nodePos);
+      nodePosMap.set(n.id, nodePos);
 
-      const color = TYPE_COLORS[n.type] || 0xa1a1aa;
-      const size = n.type === "claim" ? 4.5 : n.type === "source" ? 4.0 : 3.2;
+      const colorData = TYPE_PALETTE[n.type] ?? { hex: 0xf59e0b, css: "#F59E0B", label: "Assertion" };
+      const isFocused = activeNodeId === n.id;
+      const radiusSize = n.type === "claim" ? 5.2 : n.type === "source" ? 4.4 : 3.6;
 
-      const geometry = new THREE.SphereGeometry(size, 24, 24);
-      const material = new THREE.MeshStandardMaterial({
-        color,
-        roughness: 0.25,
-        metalness: 0.35,
-        emissive: color,
-        emissiveIntensity: activeNodeId === n.id ? 0.8 : 0.25,
+      const sphereGeo = new THREE.SphereGeometry(radiusSize, 28, 28);
+      const sphereMat = new THREE.MeshStandardMaterial({
+        color: colorData.hex,
+        roughness: 0.2,
+        metalness: 0.4,
+        emissive: colorData.hex,
+        emissiveIntensity: isFocused ? 0.9 : 0.3,
       });
 
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.copy(nodePos);
-      mesh.userData = { node: n };
-      scene.add(mesh);
-      nodeMeshesRef.current.set(n.id, mesh);
+      const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+      sphereMesh.position.copy(nodePos);
+      sphereMesh.userData = { node: n };
+      scene.add(sphereMesh);
+      nodeMeshesRef.current.set(n.id, sphereMesh);
 
-      // Glow halo ring for core nodes
-      if (n.type === "claim" || activeNodeId === n.id) {
-        const ringGeo = new THREE.RingGeometry(size * 1.3, size * 1.5, 32);
+      // Outer Halo Ring for Claims & Focused Nodes
+      if (n.type === "claim" || isFocused) {
+        const ringGeo = new THREE.RingGeometry(radiusSize * 1.35, radiusSize * 1.6, 32);
         const ringMat = new THREE.MeshBasicMaterial({
-          color,
+          color: colorData.hex,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.5,
+          opacity: isFocused ? 0.8 : 0.45,
         });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
         ringMesh.position.copy(nodePos);
@@ -184,29 +185,48 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       }
     });
 
-    // 7. Build Edge Lines
+    // 7. Curved Laser Conduit Edges with Moving Particle Pulses
+    const pulseObjects: { curve: THREE.CatmullRomCurve3; particle: THREE.Mesh; progress: number }[] = [];
+
     edges.forEach((e) => {
-      const srcPos = nodeMap.get(e.source_node_id);
-      const tgtPos = nodeMap.get(e.target_node_id);
-      if (!srcPos || !tgtPos) return;
+      const src = nodePosMap.get(e.source_node_id);
+      const tgt = nodePosMap.get(e.target_node_id);
+      if (!src || !tgt) return;
 
-      const points = [srcPos, tgtPos];
-      const edgeGeo = new THREE.BufferGeometry().setFromPoints(points);
-      const isContradiction = e.type === "contradicts";
-      const edgeColor = isContradiction ? 0xf43f5e : 0x52525b;
+      const mid = new THREE.Vector3()
+        .addVectors(src, tgt)
+        .multiplyScalar(0.5)
+        .add(new THREE.Vector3(0, 5, 8));
 
-      const edgeMat = new THREE.LineBasicMaterial({
+      const curve = new THREE.CatmullRomCurve3([src, mid, tgt]);
+      const points = curve.getPoints(36);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+
+      const isConflict = e.type === "contradicts";
+      const edgeColor = isConflict ? 0xf43f5e : 0x52525b;
+
+      const lineMat = new THREE.LineBasicMaterial({
         color: edgeColor,
         transparent: true,
-        opacity: isContradiction ? 0.85 : 0.4,
-        linewidth: isContradiction ? 2 : 1,
+        opacity: isConflict ? 0.9 : 0.45,
       });
 
-      const line = new THREE.Line(edgeGeo, edgeMat);
+      const line = new THREE.Line(lineGeo, lineMat);
       scene.add(line);
+
+      // Light particle travelling along curve
+      const pGeo = new THREE.SphereGeometry(1.0, 12, 12);
+      const pMat = new THREE.MeshBasicMaterial({
+        color: isConflict ? 0xf43f5e : 0xf59e0b,
+        transparent: true,
+        opacity: 0.9,
+      });
+      const pMesh = new THREE.Mesh(pGeo, pMat);
+      scene.add(pMesh);
+      pulseObjects.push({ curve, particle: pMesh, progress: Math.random() });
     });
 
-    // 8. Raycaster for Interaction
+    // 8. Raycast Hover & Click Handlers
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -245,7 +265,7 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     container.addEventListener("pointermove", handlePointerMove);
     container.addEventListener("click", handleClick);
 
-    // 9. Resize observer
+    // 9. Resize Observer
     const resizeObserver = new ResizeObserver(() => {
       if (!container || !renderer || !camera) return;
       const w = container.clientWidth;
@@ -257,12 +277,20 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     });
     resizeObserver.observe(container);
 
-    // 10. Animation Loop
+    // 10. Animation Loop with Dynamic Particles
     let animId: number;
     const animate = () => {
       animId = requestAnimationFrame(animate);
       controls.update();
-      stars.rotation.y += 0.0003;
+      starField.rotation.y += 0.00025;
+
+      // Update travelling light pulses along laser conduits
+      pulseObjects.forEach((p) => {
+        p.progress = (p.progress + 0.006) % 1.0;
+        const pos = p.curve.getPoint(p.progress);
+        p.particle.position.copy(pos);
+      });
+
       renderer.render(scene, camera);
     };
     animate();
@@ -277,43 +305,54 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
   }, [nodes, edges, activeNodeId, onNodeClick]);
 
   return (
-    <div className={cn("relative size-full overflow-hidden select-none bg-zinc-950", className)}>
+    <div className={cn("relative size-full overflow-hidden select-none bg-[#08080A]", className)}>
       <div ref={containerRef} className="size-full" />
 
-      {/* Camera controls toolbar */}
-      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 rounded-lg border border-zinc-800/80 bg-zinc-900/80 p-1 backdrop-blur-md">
+      {/* Floating 3D Telemetry HUD Controls */}
+      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1 rounded-xl border border-zinc-800/90 bg-zinc-900/85 p-1 backdrop-blur-xl shadow-2xl">
         <Button
           type="button"
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0 text-zinc-400 hover:text-zinc-100"
+          className="h-7 w-7 p-0 text-zinc-400 hover:text-amber-400 transition active:scale-95"
           onClick={resetCamera}
-          title="Reset 3D Camera"
+          title="Reset 3D Space Orbit"
         >
           <RotateCcw className="size-3.5" />
         </Button>
       </div>
 
-      {/* HUD Info Pill */}
+      {/* Active Raycast HUD Card */}
       {hoveredNode && hudPos ? (
         <div
-          className="pointer-events-none absolute z-30 flex max-w-xs -translate-x-1/2 -translate-y-full flex-col gap-1 rounded-xl border border-zinc-700 bg-zinc-900/95 p-2.5 text-xs text-zinc-200 shadow-2xl backdrop-blur-xl"
-          style={{ left: hudPos.x, top: hudPos.y - 12 }}
+          className="pointer-events-none absolute z-30 flex max-w-xs -translate-x-1/2 -translate-y-full flex-col gap-1.5 rounded-2xl border border-zinc-700/80 bg-zinc-950/95 p-3 text-xs text-zinc-200 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+          style={{ left: hudPos.x, top: hudPos.y - 14 }}
         >
-          <div className="flex items-center gap-1.5 font-medium">
+          <div className="flex items-center justify-between gap-2">
             <span
-              className="inline-block size-2 rounded-full"
-              style={{ backgroundColor: `#${(TYPE_COLORS[hoveredNode.type] || 0xa1a1aa).toString(16).padStart(6, "0")}` }}
-            />
-            <span className="capitalize">{hoveredNode.type}</span>
+              className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider font-semibold"
+              style={{ color: TYPE_PALETTE[hoveredNode.type]?.css || "#F59E0B" }}
+            >
+              <span
+                className="size-2 rounded-full shadow-[0_0_8px_currentColor]"
+                style={{ backgroundColor: TYPE_PALETTE[hoveredNode.type]?.css || "#F59E0B" }}
+              />
+              {TYPE_PALETTE[hoveredNode.type]?.label || hoveredNode.type}
+            </span>
+
             {hoveredNode.status ? (
-              <Badge variant="cyan" className="ml-auto text-[10px] px-1 py-0 uppercase">
+              <Badge variant="amber" className="text-[9px] font-mono px-1.5 py-0 uppercase">
                 {hoveredNode.status}
               </Badge>
             ) : null}
           </div>
-          <div className="font-semibold text-zinc-100">{hoveredNode.label}</div>
-          <div className="text-[11px] text-zinc-400 line-clamp-2">{hoveredNode.description}</div>
+
+          <div className="font-semibold text-zinc-100 text-xs leading-snug">{hoveredNode.label}</div>
+          {hoveredNode.description ? (
+            <div className="text-[11px] leading-relaxed text-zinc-400 line-clamp-2">
+              {hoveredNode.description}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -189,35 +189,35 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        "relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-800/60 bg-zinc-950/70 shadow-2xl backdrop-blur-2xl",
+        "relative flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-800/80 bg-[#08080A]/90 shadow-2xl backdrop-blur-2xl",
         className,
       )}
     >
       {/* Studio Header */}
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-800/60 px-4 bg-zinc-900/30">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-800/70 px-4 bg-zinc-900/30">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-400">
+          <div className="flex size-7 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400">
             <MessagesSquare className="size-3.5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-tight text-zinc-100">
+              <span className="text-xs font-semibold tracking-tight text-zinc-100 font-display">
                 Research Studio
               </span>
               <span className="inline-block size-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
             </div>
-            <p className="text-[10px] text-zinc-500">Observable Synthesis ? Multi-Source Grounding</p>
+            <p className="text-[10px] font-mono text-zinc-500">Observable Synthesis ? Multi-Source Grounding</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {isStreaming ? (
-            <Badge variant="cyan" className="animate-pulse text-[11px] gap-1 px-2 py-0.5">
-              <span className="size-1.5 rounded-full bg-cyan-400" />
+            <Badge variant="amber" className="animate-pulse text-[11px] gap-1 px-2 py-0.5 font-mono">
+              <span className="size-1.5 rounded-full bg-amber-400" />
               Synthesizing...
             </Badge>
           ) : sourcesLinked > 0 ? (
-            <Badge variant="emerald" className="text-[11px] gap-1 px-2 py-0.5">
+            <Badge variant="emerald" className="text-[11px] gap-1 px-2 py-0.5 font-mono">
               <BookOpen className="size-3" />
               {sourcesLinked} Sources Grounded
             </Badge>
@@ -230,14 +230,14 @@ export function ChatPanel({
         {messages.length === 0 ? (
           <div className="flex h-full flex-col justify-between overflow-y-auto px-6 py-8">
             <div className="mx-auto max-w-2xl space-y-6 pt-4">
-              <div className="space-y-2.5">
-                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-medium tracking-wide text-cyan-300">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-mono font-medium tracking-wide text-amber-300">
                   <Sparkles className="size-3" />
                   XPLAINAI RESEARCH ENGINE 2.0
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-100">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-100 font-display">
                   Observable reasoning. <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-indigo-400">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-300 to-amber-200">
                     Empirical evidence.
                   </span>
                 </h1>
@@ -264,16 +264,16 @@ export function ChatPanel({
                         onClick={() => {
                           onSend?.(p.prompt);
                         }}
-                        className="group flex flex-col items-start rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-500/40 hover:bg-zinc-900/80 hover:shadow-lg active:scale-[0.98]"
+                        className="group flex flex-col items-start rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-3.5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-500/50 hover:bg-zinc-900/80 hover:shadow-lg active:scale-[0.98]"
                       >
                         <div className="flex w-full items-center justify-between">
-                          <span className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700/60 bg-zinc-800/50 px-2 py-0.5 text-[10px] font-medium text-zinc-300">
-                            <Icon className="size-3 text-cyan-400" />
+                          <span className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700/60 bg-zinc-800/60 px-2 py-0.5 text-[10px] font-medium text-zinc-300 font-mono">
+                            <Icon className="size-3 text-amber-400" />
                             {p.tag}
                           </span>
-                          <ArrowUp className="size-3.5 text-zinc-600 transition-colors group-hover:text-cyan-400 group-hover:rotate-45" />
+                          <ArrowUp className="size-3.5 text-zinc-600 transition-colors group-hover:text-amber-400 group-hover:rotate-45" />
                         </div>
-                        <h4 className="mt-2 text-xs font-semibold text-zinc-200 group-hover:text-cyan-300">
+                        <h4 className="mt-2 text-xs font-semibold text-zinc-200 group-hover:text-amber-300 font-display">
                           {p.title}
                         </h4>
                         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-zinc-500">
@@ -288,17 +288,17 @@ export function ChatPanel({
 
             {/* Active Research Pipeline Tools Pill */}
             <div className="mx-auto flex flex-wrap items-center justify-center gap-3 pt-6 text-[11px] text-zinc-500">
-              <span className="font-mono text-[10px] uppercase tracking-widest">Active Tool Mesh:</span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 text-zinc-400 font-mono text-[10px]">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-400">Active Tool Mesh:</span>
+              <span className="rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">
                 ArXiv Preprints
               </span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 text-zinc-400 font-mono text-[10px]">
+              <span className="rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">
                 Wikipedia API
               </span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 text-zinc-400 font-mono text-[10px]">
+              <span className="rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">
                 DuckDuckGo Search
               </span>
-              <span className="rounded-md border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 text-zinc-400 font-mono text-[10px]">
+              <span className="rounded-md border border-zinc-800 bg-zinc-900/70 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">
                 AST Calculator
               </span>
             </div>
@@ -343,7 +343,7 @@ export function ChatPanel({
                             ? "border border-zinc-700/60 bg-zinc-900/90 text-zinc-100 shadow-md font-medium"
                             : "border border-zinc-800/80 bg-zinc-900/40 text-zinc-200",
                           message.role === "system" && "border-dashed text-zinc-400 italic text-xs",
-                          showCaret && "border-cyan-500/40",
+                          showCaret && "border-amber-500/40",
                         )}
                       >
                         {message.role === "user" || message.role === "system" ? (
@@ -358,7 +358,7 @@ export function ChatPanel({
                       <div className="flex items-center gap-1.5 px-1">
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 active:scale-95"
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 active:scale-95 font-mono"
                           onClick={() => {
                             void navigator.clipboard.writeText(message.content);
                           }}
@@ -369,7 +369,7 @@ export function ChatPanel({
                         {isLatestFinishedAssistant && onRetry ? (
                           <button
                             type="button"
-                            className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 active:scale-95"
+                            className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200 active:scale-95 font-mono"
                             onClick={onRetry}
                           >
                             <RotateCcw className="size-3" />
@@ -410,7 +410,7 @@ export function ChatPanel({
           }}
           className={cn(
             "relative rounded-xl border bg-zinc-950/80 p-2.5 shadow-inner transition-all duration-200",
-            "focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/30",
+            "focus-within:border-amber-500/50 focus-within:ring-1 focus-within:ring-amber-500/30",
             evidenceDemandHighlight
               ? "border-amber-500/60 ring-1 ring-amber-500/30"
               : "border-zinc-800/90",
@@ -460,9 +460,8 @@ export function ChatPanel({
                 <Button
                   type="submit"
                   size="sm"
-                  variant="glow"
                   disabled={!canSend}
-                  className="h-8 gap-1.5 px-3 text-xs active:scale-95"
+                  className="h-8 gap-1.5 px-3.5 text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95 transition-all"
                 >
                   <span>Synthesize</span>
                   <ArrowUp className="size-3.5" />

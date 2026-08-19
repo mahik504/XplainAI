@@ -19,16 +19,16 @@ export function StructuralSignalsCard({
     const supportPct = Math.round(claimMetrics.supportLevel * 100);
     return (
       <div className="space-y-4">
-        <div className="rounded-xl border border-cyan-500/30 bg-cyan-950/20 p-3.5">
+        <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3.5">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-cyan-400 font-semibold">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-amber-400 font-semibold">
               FOCUSED ASSERTION
             </span>
-            <Badge variant="cyan" className="ml-auto text-[10px] font-mono px-1.5 py-0">
+            <Badge variant="amber" className="ml-auto text-[10px] font-mono px-1.5 py-0">
               {supportPct}% Grounded
             </Badge>
           </div>
-          <p className="text-xs leading-relaxed text-zinc-200 font-medium">
+          <p className="text-xs leading-relaxed text-zinc-100 font-medium">
             "{claimMetrics.assertionText}"
           </p>
         </div>
@@ -36,12 +36,12 @@ export function StructuralSignalsCard({
         {/* Progress bar */}
         <div className="space-y-1">
           <div className="flex justify-between text-[11px] font-mono text-zinc-400">
-            <span>Empirical Backing</span>
-            <span className="text-cyan-400">{supportPct}%</span>
+            <span>Empirical Grounding</span>
+            <span className="text-amber-400 font-semibold">{supportPct}%</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
             <div
-              className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]"
               style={{ width: `${supportPct}%` }}
             />
           </div>
@@ -57,7 +57,7 @@ export function StructuralSignalsCard({
           <SignalMetricTile
             label="Retrieved Sources"
             value={claimMetrics.retrievedSourcesCount}
-            tone="cyan"
+            tone="amber"
             icon={ShieldCheck}
           />
           <SignalMetricTile
@@ -105,25 +105,25 @@ export function StructuralSignalsCard({
         </div>
         <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-zinc-800 p-0.5 gap-0.5">
           <div
-            className="h-full rounded-full bg-cyan-400 transition-all"
+            className="h-full rounded-full bg-amber-400 transition-all shadow-[0_0_6px_rgba(245,158,11,0.5)]"
             style={{ width: `${claimPct}%` }}
             title={`Assertions: ${score.claimCount}`}
           />
           <div
-            className="h-full rounded-full bg-emerald-400 transition-all"
+            className="h-full rounded-full bg-emerald-400 transition-all shadow-[0_0_6px_rgba(16,185,129,0.5)]"
             style={{ width: `${evidencePct}%` }}
             title={`Evidence: ${score.evidenceCount}`}
           />
           <div
-            className="h-full rounded-full bg-violet-400 transition-all"
+            className="h-full rounded-full bg-indigo-400 transition-all"
             style={{ width: `${reasoningPct}%` }}
             title={`Connectors: ${score.reasoningCount}`}
           />
         </div>
         <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 pt-0.5">
-          <span className="flex items-center gap-1 text-cyan-400">? {score.claimCount} Claims</span>
+          <span className="flex items-center gap-1 text-amber-400">? {score.claimCount} Claims</span>
           <span className="flex items-center gap-1 text-emerald-400">? {score.evidenceCount} Evidence</span>
-          <span className="flex items-center gap-1 text-violet-400">? {score.reasoningCount} Connectors</span>
+          <span className="flex items-center gap-1 text-indigo-400">? {score.reasoningCount} Connectors</span>
         </div>
       </div>
 
@@ -131,7 +131,7 @@ export function StructuralSignalsCard({
         <SignalMetricTile
           label="Testable Claims"
           value={score.claimCount}
-          tone="cyan"
+          tone="amber"
           icon={CheckCircle2}
         />
         <SignalMetricTile
@@ -155,7 +155,7 @@ export function StructuralSignalsCard({
         <SignalMetricTile
           label="Verified External Sources"
           value={retrievedSourcesCount}
-          tone="cyan"
+          tone="emerald"
           icon={ShieldCheck}
           className="col-span-2"
         />
@@ -182,21 +182,21 @@ function SignalMetricTile({
   className?: string;
 }) {
   const toneMap = {
-    cyan: "border-cyan-500/20 bg-cyan-950/20 text-cyan-400",
-    emerald: "border-emerald-500/20 bg-emerald-950/20 text-emerald-400",
-    amber: "border-amber-500/20 bg-amber-950/20 text-amber-400",
-    violet: "border-violet-500/20 bg-violet-950/20 text-violet-400",
+    amber: "border-amber-500/25 bg-amber-950/20 text-amber-400",
+    emerald: "border-emerald-500/25 bg-emerald-950/20 text-emerald-400",
+    cyan: "border-sky-500/25 bg-sky-950/20 text-sky-400",
+    violet: "border-indigo-500/25 bg-indigo-950/20 text-indigo-400",
   }[tone];
 
   return (
-    <div className={cn("rounded-xl border p-3 bg-zinc-900/40", toneMap, className)}>
+    <div className={cn("rounded-xl border p-3 bg-zinc-900/40 transition-all duration-200 hover:bg-zinc-900/70", toneMap, className)}>
       <div className="flex items-center justify-between">
-        <Icon className="size-3.5 opacity-80" />
+        <Icon className="size-3.5 opacity-85" />
         <span className="font-mono text-lg font-bold tracking-tight text-zinc-100 tabular-nums">
           {value}
         </span>
       </div>
-      <p className="mt-1 text-[11px] font-medium text-zinc-400">{label}</p>
+      <p className="mt-1 text-[11px] font-medium text-zinc-400 font-mono">{label}</p>
     </div>
   );
 }
