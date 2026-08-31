@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Scale, Search, Zap, Rocket } from "lucide-react";
+﻿import { Check, ChevronDown, Scale, Search, Zap, Rocket } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { RUN_MODES, getRunModeMeta, type RunMode } from "@/lib/run-mode";
@@ -60,7 +60,7 @@ export function ModeSelector({ value, onChange, disabled }: ModeSelectorProps) {
       >
         <ActiveIcon className="size-3.5 text-cyan-400" aria-hidden />
         <span className="font-semibold text-white">{activeMeta.label}</span>
-        <span className="text-[10px] text-slate-400 hidden sm:inline">· {activeMeta.description}</span>
+        <span className="text-[10px] text-slate-400 hidden sm:inline">- {activeMeta.description}</span>
         <ChevronDown
           className={cn("size-3 text-slate-400 transition-transform duration-150", open && "rotate-180")}
           aria-hidden

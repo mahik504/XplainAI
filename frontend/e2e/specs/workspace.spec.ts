@@ -63,7 +63,7 @@ test.describe("Workspace & Chat Interaction E2E Suite", () => {
 
   test("should open shortcuts help dialog when pressing ?", async ({ page }) => {
     await page.keyboard.press("?");
-    const dialogTitle = page.getByText(/Keyboard Shortcuts|Shortcuts/i);
+    const dialogTitle = page.getByText(/Keyboard Shortcuts|Shortcuts/i).first();
     if (await dialogTitle.isVisible()) {
       await expect(dialogTitle).toBeVisible();
       await page.keyboard.press("Escape");
