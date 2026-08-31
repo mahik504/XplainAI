@@ -4,10 +4,10 @@ from neural_navigator.orchestration.pipeline import _decompose_research_tasks, a
 
 def test_mode_parse_aliases() -> None:
     assert RunMode.parse("fast") is RunMode.FAST
-    assert RunMode.parse("moderate") is RunMode.DEEP_RESEARCH
+    assert RunMode.parse("moderate") is RunMode.BALANCED
     assert RunMode.parse("deep") is RunMode.DEEP_RESEARCH
-    assert RunMode.parse("complex") is RunMode.DEEP_RESEARCH
-    assert RunMode.parse(None) is RunMode.DEEP_RESEARCH
+    assert RunMode.parse("complex") is RunMode.COMPLEX
+    assert RunMode.parse(None) is RunMode.BALANCED
 
 
 def test_analyze_query_research_need() -> None:

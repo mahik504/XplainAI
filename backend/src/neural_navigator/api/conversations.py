@@ -7,9 +7,8 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
-if TYPE_CHECKING:
-    from neural_navigator.core.dependencies import PrincipalDep
-    from neural_navigator.services.conversations import ConversationStore
+from neural_navigator.core.dependencies import PrincipalDep
+from neural_navigator.services.conversations import ConversationStore
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 

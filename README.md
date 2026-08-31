@@ -1,128 +1,117 @@
-<div align="center">
-  <img src="https://raw.githubusercontent.com/google/material-design-icons/master/png/action/visibility/materialicons/24dp/2x/baseline_visibility_white_24dp.png" alt="XplainAI Logo" width="120" />
-  <h1>XplainAI 🔮</h1>
-  <p><strong>Advanced Orchestral Web Scraping & Visual Neural Navigation</strong></p>
+# XplainAI
 
-  <p>
-    <a href="https://github.com/MAHI/XplainAI/actions"><img src="https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge" alt="Build Status"></a>
-    <a href="https://github.com/MAHI/XplainAI/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License"></a>
-    <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"></a>
-    <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React"></a>
-    <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind"></a>
-  </p>
-</div>
+**Advanced Orchestral Web Scraping & Visual Neural Navigation**
+
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)](https://github.com/MAHI/XplainAI/actions)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](https://github.com/MAHI/XplainAI/blob/main/LICENSE)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 
 ---
 
-## 🚀 Overview
+## Overview
 
-**XplainAI** is an advanced, agentic deep-research tool and visual intelligence navigator. Built for researchers, developers, and knowledge workers, XplainAI uses a LangGraph-powered orchestration engine to scrape the web, extract data from complex documents, and visually explain its reasoning using hardware-accelerated graphs and epistemic breakdowns.
+XplainAI is an advanced, multi-agent deep research and visual intelligence framework. Designed for researchers, security analysts, and engineers, XplainAI leverages a LangGraph-powered orchestration engine to conduct complex web scraping, autonomous information extraction, and synthesized reasoning. 
 
-Say goodbye to black-box LLMs. Watch your models think, scrape, cite, and verify.
+Unlike traditional black-box LLM wrappers, XplainAI makes its reasoning fully transparent. Every claim is grounded in structured citations, and the system renders its epistemic processes through hardware-accelerated topological graphs.
 
-## ✨ Key Features
+## Core Capabilities
 
-- 🧠 **Deep Agentic Orchestration**: LangGraph-powered reasoning capable of planning, web scraping, and data extraction across multiple steps.
-- 🎨 **Hyper-Glassmorphic UI**: Gorgeous frontend built with Next.js, Framer Motion, and Three.js ambient shaders. Dark mode by default, beautifully translucent.
-- 🔐 **Bring Your Own Key (BYOK) & Localhost**: Fully functional transient LLM provisioning. Hook up OpenAI, Anthropic, or local Ollama instances (`http://localhost:11434/v1`) without data leaving your machine.
-- 🔌 **Universal MCP Server**: Integrated Model Context Protocol (MCP) server. Connect XplainAI directly to **Cursor, Antigravity, and Lyra** to supercharge your external coding agents with deep web-scraping powers.
-- 🕵️ **Ephemeral Mode**: Strict privacy mode. Chats vanish on session end, leaving zero trace in the database.
-- ♿ **Accessible**: Screen-reader ready (`aria-live="polite"`), semantic HTML, and fluid keyboard navigation.
+- **Deep Agentic Orchestration**: Autonomous planning, extraction, and synthesis powered by LangGraph. It effortlessly navigates across GitHub repositories, YouTube transcripts, PDF documents, and standard web sources.
+- **Transparent Epistemics**: Real-time visualization of source evidence and claim generation.
+- **Enterprise Security (BYOK)**: Native support for transient local models. Connect a local Ollama instance (`http://localhost:11434/v1`) via WebSockets to perform deep research without any data leaving your infrastructure.
+- **Model Context Protocol (MCP)**: Mount XplainAI as a standard MCP server to supercharge external agents (e.g., Cursor, Antigravity, Lyra) with orchestrated deep-scraping toolsets.
+- **Ephemeral Execution**: Strict zero-trace operations for sensitive queries.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
-XplainAI operates via a dual-core architecture, utilizing an asynchronous event-driven backend and a reactive, shader-accelerated frontend.
+XplainAI operates on a decoupled architecture, isolating the asynchronous orchestration layer from the reactive rendering pipeline.
 
-![XplainAI Architecture Graph](docs/screenshots/05-2d-flow-dag.png)
+```mermaid
+graph TD
+    User([Client / Browser]) -->|WebSocket TLS| Gateway[FastAPI WebSocket API]
+    
+    subgraph "Core Orchestration"
+        Gateway --> Orchestrator[LangGraph Engine]
+        Orchestrator --> Tools[Scraping & Extraction Tools]
+        Orchestrator --> Synthesizer[Synthesis & Verification]
+    end
 
-### Directory Structure
+    subgraph "Data Sources"
+        Tools --> GitHub[GitHub API / Repositories]
+        Tools --> YouTube[YouTube Transcripts]
+        Tools --> PDF[PDF Documents]
+        Tools --> Search[DuckDuckGo / Web]
+    end
+    
+    subgraph "Language Providers"
+        Synthesizer --> BYOK[Localhost / BYOK Models]
+        Synthesizer --> OpenAI[OpenAI / Anthropic]
+    end
 
-```text
-📦 XplainAI
- ┣ 📂 backend/        # FastAPI, LangGraph Orchestrator, Websockets, MCP Server
- ┣ 📂 frontend/       # Next.js UI, Three.js Shaders, Framer Motion, Tailwind
- ┣ 📂 docs/           # PRDs, Architecture Decisions (ADRs), Research Papers
- ┣ 📂 shared/         # Shared configurations and contracts
- ┣ 📂 infra/          # Docker, Kubernetes, Terraform setups
- ┣ 📂 tools/          # Codegen and standalone scripts
- ┣ 📜 package.json    # Monorepo setup
- ┗ 📜 docker-compose.yml
+    subgraph "External Integrations"
+        ExternalAgents([Cursor / Antigravity]) -->|MCP Protocol| MCPServer[XplainAI MCP Server]
+        MCPServer --> Orchestrator
+    end
 ```
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 18+ and `pnpm`
 - Python 3.10+ and `uv`
 
-### 1. Clone & Setup
+### Installation
+
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/MAHI/XplainAI.git
 cd XplainAI
+```
 
-# Install frontend dependencies
-pnpm install
-
-# Install backend dependencies
+2. **Backend Setup:**
+```bash
 cd backend
 uv venv
 uv pip install -e .
-```
-
-### 2. Run the Backend
-```bash
-cd backend
 uv run uvicorn neural_navigator.api.main:app --reload --port 8000
 ```
 
-### 3. Run the Frontend
-In a new terminal:
+3. **Frontend Setup:**
+In a separate terminal:
 ```bash
 cd frontend
-pnpm dev
+pnpm install
+pnpm dev --port 3000
 ```
-Access the application at `http://localhost:3000`.
+Access the interface at `http://localhost:3000`.
 
 ---
 
-## 🔌 Connecting to MCP (Cursor / Antigravity)
+## Integrating with MCP (Model Context Protocol)
 
-You can expose XplainAI's deep research capabilities to your local AI coding assistants via the Model Context Protocol.
+XplainAI can function as a headless deep-research engine for your existing coding assistants. To attach the MCP server:
 
-1. Ensure your backend environment is setup.
-2. Configure your agent (Cursor, Antigravity, etc.) to use the XplainAI MCP server by adding this command to your MCP configuration:
-   ```json
-   {
-     "mcpServers": {
-       "xplainai": {
-         "command": "uv",
-         "args": ["run", "python", "src/mcp_server.py"],
-         "cwd": "/absolute/path/to/XplainAI/backend"
-       }
-     }
-   }
-   ```
-3. Your coding assistant can now run deep-research orchestrations natively!
+```json
+{
+  "mcpServers": {
+    "xplainai": {
+      "command": "uv",
+      "args": ["run", "python", "src/mcp_server.py"],
+      "cwd": "/absolute/path/to/XplainAI/backend"
+    }
+  }
+}
+```
 
----
+## Security & Privacy
 
-## 🛡️ Privacy & BYOK Security
+XplainAI does not proxy authentication credentials to external telemetry servers. The frontend natively provisions your API keys over a secure WebSocket directly to the backend instance. The backend instantiates a transient LLM provider exclusively for the duration of the request.
 
-XplainAI does not proxy your API keys to external telemetry servers. The frontend natively provisions your `customApiBase` and `customApiKey` over a secure WebSocket directly to your running backend instance. The backend instantiates a transient LLM provider for the duration of the request and aggressively cleans it up afterward. 
+## License
 
-For maximum security, we recommend running a local Ollama instance and routing XplainAI to `http://localhost:11434/v1`.
-
----
-
-## 📝 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
-
----
-<div align="center">
-  <i>Developed with precision by <b>MAHI</b></i>
-</div>
+Distributed under the MIT License. See `LICENSE` for details.

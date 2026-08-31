@@ -79,6 +79,10 @@ async def fetch_and_parse_url(url: str, timeout_seconds: float = 8.0) -> ToolRes
     if "youtube.com" in domain or "youtu.be" in domain:
         return await _handle_youtube_url(url, parsed, started, timeout_seconds)
 
+    # Specialized Handler 3: PDF Documents
+    if url.lower().endswith(".pdf") or parsed.path.lower().endswith(".pdf"):
+        return await _handle_pdf_url(url, parsed, started, timeout_seconds)
+
     # General Web & Documentation Scraper
     try:
         async with httpx.AsyncClient(
@@ -198,9 +202,9 @@ async def _handle_github_url(
             stars = repo_data.get("stargazers_count", 0)
             lang = repo_data.get("language") or "Code"
 
-            sanitized_readme = sanitize_untrusted_content(readme_text, max_chars=3500)
+            sanitized_readme = sanitize_untrusted_content(readme_text, max_chars=10000)
             summary_content = (
-                f"GitHub Repo: {owner}/{repo} (★ {stars} | {lang})\n"
+                f"GitHub Repo: {owner}/{repo} (⭐️ {stars} | {lang})\n"
                 f"Description: {desc}\n\nREADME Summary:\n{sanitized_readme}"
             )
 
@@ -233,6 +237,61 @@ async def _handle_github_url(
 
     return await _handle_general_fallback(url, parsed, started, timeout_seconds)
 
+async def _handle_pdf_url(
+    url: str,
+    parsed: Any,
+    started: float,
+    timeout_seconds: float,
+) -> ToolResult:
+    """Downloads and extracts text from a PDF file."""
+    try:
+        import fitz
+        import asyncio
+        async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=timeout_seconds, follow_redirects=True) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            
+            def _extract_pdf(data: bytes) -> str:
+                doc = fitz.open(stream=data, filetype="pdf")
+                text = ""
+                for page in doc:
+                    text += page.get_text() + "\n"
+                return text
+                
+            pdf_text = await asyncio.to_thread(_extract_pdf, resp.content)
+            sanitized = sanitize_untrusted_content(pdf_text, max_chars=15000)
+            
+            title = url.split("/")[-1] or "PDF Document"
+            completed = time.perf_counter() * 1000
+            
+            source = Source(
+                id=generate_id("src"),
+                title=title,
+                url=url,
+                domain=parsed.netloc,
+                source_type=SourceType.DOCUMENTATION,
+                snippet=sanitized[:400],
+                authority_score=0.90,
+            )
+            
+            return ToolResult(
+                tool="url_ingest",
+                status="ok",
+                started_ms=started,
+                completed_ms=completed,
+                duration_ms=round(completed - started, 2),
+                summary=f"Ingested PDF {title} ({len(sanitized)} chars)",
+                data={
+                    "url": url,
+                    "title": title,
+                    "domain": parsed.netloc,
+                    "content": sanitized,
+                    "sources": [source.as_dict()],
+                },
+            )
+    except Exception as exc:
+        _logger.warning("url_ingest.pdf_failed", url=url, error=str(exc))
+        return await _handle_general_fallback(url, parsed, started, timeout_seconds)
 
 async def _handle_youtube_url(
     url: str,
@@ -240,67 +299,80 @@ async def _handle_youtube_url(
     started: float,
     timeout_seconds: float,
 ) -> ToolResult:
-    """Fetches video metadata and description for YouTube videos and Shorts."""
+    """Fetches video metadata and full transcript for YouTube videos."""
     video_id = ""
     if "youtu.be" in parsed.netloc:
         video_id = parsed.path.strip("/")
     elif "watch" in parsed.path:
+        from urllib.parse import parse_qsl
         q = parsed.query
-        params = dict(qc.split("=") for qc in q.split("&") if "=" in qc)
+        params = dict(parse_qsl(q))
         video_id = params.get("v", "")
     elif "shorts" in parsed.path:
         parts = [p for p in parsed.path.split("/") if p]
         if len(parts) >= 2:
             video_id = parts[1]
 
+    if not video_id:
+        return await _handle_general_fallback(url, parsed, started, timeout_seconds)
+
     # Fetch oEmbed public metadata
-    oembed_url = (
-        f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
-    )
-
+    oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+    title, author = f"YouTube Video ({video_id})", "YouTube Creator"
+    
     try:
-        async with httpx.AsyncClient(
-            headers={"User-Agent": USER_AGENT},
-            timeout=timeout_seconds,
-        ) as client:
+        async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}, timeout=timeout_seconds) as client:
             resp = await client.get(oembed_url)
-            completed = time.perf_counter() * 1000
-
             if resp.status_code == 200:
                 data = resp.json()
-                title = data.get("title", f"YouTube Video ({video_id})")
-                author = data.get("author_name", "YouTube Creator")
+                title = data.get("title", title)
+                author = data.get("author_name", author)
+    except Exception:
+        pass
 
-                content = f"YouTube Video: '{title}' by {author}\nLink: {url}\nVideo ID: {video_id}"
-                source = Source(
-                    id=generate_id("src"),
-                    title=f"YouTube: {title} ({author})",
-                    url=url,
-                    domain="youtube.com",
-                    source_type=SourceType.WEB,
-                    snippet=f"Author: {author} · Title: {title}",
-                    authority_score=0.85,
-                )
-
-                return ToolResult(
-                    tool="url_ingest",
-                    status="ok",
-                    started_ms=started,
-                    completed_ms=completed,
-                    duration_ms=round(completed - started, 2),
-                    summary=f"Ingested YouTube Video: {title}",
-                    data={
-                        "url": url,
-                        "title": title,
-                        "author": author,
-                        "content": content,
-                        "sources": [source.as_dict()],
-                    },
-                )
+    # Extract Transcript
+    transcript_text = ""
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+        import asyncio
+        
+        def _get_transcript():
+            ts = YouTubeTranscriptApi.get_transcript(video_id)
+            return " ".join([item['text'] for item in ts])
+            
+        transcript_text = await asyncio.to_thread(_get_transcript)
+        transcript_text = sanitize_untrusted_content(transcript_text, max_chars=15000)
     except Exception as exc:
-        _logger.debug("url_ingest.youtube_oembed_failed", error=str(exc))
+        _logger.debug("url_ingest.youtube_transcript_failed", error=str(exc))
+        transcript_text = "Transcript unavailable."
 
-    return await _handle_general_fallback(url, parsed, started, timeout_seconds)
+    completed = time.perf_counter() * 1000
+    content = f"YouTube Video: '{title}' by {author}\nLink: {url}\nVideo ID: {video_id}\n\nTranscript:\n{transcript_text}"
+    source = Source(
+        id=generate_id("src"),
+        title=f"YouTube: {title} ({author})",
+        url=url,
+        domain="youtube.com",
+        source_type=SourceType.WEB,
+        snippet=f"Author: {author} | Title: {title}",
+        authority_score=0.85,
+    )
+
+    return ToolResult(
+        tool="url_ingest",
+        status="ok",
+        started_ms=started,
+        completed_ms=completed,
+        duration_ms=round(completed - started, 2),
+        summary=f"Ingested YouTube Video: {title}",
+        data={
+            "url": url,
+            "title": title,
+            "author": author,
+            "content": content,
+            "sources": [source.as_dict()],
+        },
+    )
 
 
 async def _handle_general_fallback(

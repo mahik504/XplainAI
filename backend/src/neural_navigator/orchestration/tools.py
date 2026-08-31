@@ -103,57 +103,33 @@ async def run_calculator(expression: str) -> ToolResult:
         return _finish("calculator", started, status="error", summary=f"Calculator failed: {exc}")
 
 
-def _ddg_topic_rows(item: dict[str, Any], *, max_results: int, sink: list[dict[str, str]]) -> None:
-    """Flatten DuckDuckGo RelatedTopics (including nested Topic groups)."""
-    if len(sink) >= max_results:
-        return
-    topics = item.get("Topics")
-    if isinstance(topics, list):
-        for nested in topics:
-            if isinstance(nested, dict):
-                _ddg_topic_rows(nested, max_results=max_results, sink=sink)
-            if len(sink) >= max_results:
-                return
-        return
-    text = str(item.get("Text") or "").strip()
-    if not text:
-        return
-    sink.append(
-        {
-            "title": text.split(" - ", 1)[0][:80],
-            "snippet": text[:400],
-            "url": str(item.get("FirstURL") or ""),
-        }
-    )
-
-
 async def run_web_search(query: str, *, max_results: int = 5) -> ToolResult:
-    """DuckDuckGo Instant Answer API — no API key required."""
+    """DuckDuckGo web search using duckduckgo-search package."""
     started = time.perf_counter() * 1000
-    url = f"https://api.duckduckgo.com/?q={quote_plus(query)}&format=json&no_html=1&skip_disambig=1"
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            payload = response.json()
-        abstract = str(payload.get("AbstractText") or "").strip()
-        heading = str(payload.get("Heading") or "").strip()
-        related = payload.get("RelatedTopics") or []
+        from duckduckgo_search import DDGS
+        import asyncio
+        
+        def _sync_search() -> list[dict[str, str]]:
+            with DDGS() as ddgs:
+                results = ddgs.text(query, max_results=max_results)
+                return list(results) if results else []
+                
+        # Run synchronous DDGS in thread pool
+        raw_results = await asyncio.to_thread(_sync_search)
+        
         snippets: list[dict[str, str]] = []
-        if abstract:
+        for r in raw_results:
             snippets.append(
                 {
-                    "title": heading or "Summary",
-                    "snippet": abstract[:400],
-                    "url": str(payload.get("AbstractURL") or ""),
+                    "title": str(r.get("title") or "Search Result")[:80],
+                    "snippet": str(r.get("body") or "")[:400],
+                    "url": str(r.get("href") or ""),
+                    "domain": "web",
+                    "authority": 0.85,
                 }
             )
-        if isinstance(related, list):
-            for item in related:
-                if isinstance(item, dict):
-                    _ddg_topic_rows(item, max_results=max_results, sink=snippets)
-                if len(snippets) >= max_results:
-                    break
+            
         if not snippets:
             return _finish(
                 "web_search",
@@ -166,7 +142,7 @@ async def run_web_search(query: str, *, max_results: int = 5) -> ToolResult:
             "web_search",
             started,
             status="ok",
-            summary=f"Retrieved {len(snippets)} source(s) for “{query[:60]}”",
+            summary=f"Retrieved {len(snippets)} source(s) for '{query[:60]}'",
             data={"query": query, "results": snippets},
         )
     except Exception as exc:

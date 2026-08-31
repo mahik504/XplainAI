@@ -1,4 +1,4 @@
-import { Check, ChevronDown, Scale, Search, Zap } from "lucide-react";
+import { Check, ChevronDown, Scale, Search, Zap, Rocket } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { RUN_MODES, getRunModeMeta, type RunMode } from "@/lib/run-mode";
@@ -8,6 +8,7 @@ const ICONS = {
   zap: Zap,
   scale: Scale,
   search: Search,
+  rocket: Rocket,
 } as const;
 
 interface ModeSelectorProps {

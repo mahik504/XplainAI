@@ -189,8 +189,12 @@ async def run_orchestrated_chat(
             tool_results.append(url_res)
             await emit_stage(OrchestrationStage.TOOL_COMPLETED, url_res.as_dict())
 
+        # Dynamic depth based on RunMode
+        max_queries = 1 if mode is RunMode.FAST else (2 if mode is RunMode.BALANCED else (4 if mode is RunMode.DEEP_RESEARCH else 8))
+        max_results_per_query = 2 if mode is RunMode.FAST else (5 if mode is RunMode.BALANCED else (10 if mode is RunMode.DEEP_RESEARCH else 15))
+
         queries = research_tasks or [user_text]
-        for query in queries[:4]:
+        for query in queries[:max_queries]:
             await emit_stage(
                 OrchestrationStage.TOOL_STARTED,
                 {"tool": "web_search", "query": query},
@@ -198,7 +202,7 @@ async def run_orchestrated_chat(
             search = await tool_registry.execute(
                 "web_search",
                 query=query,
-                max_results=5,
+                max_results=max_results_per_query,
             )
             tool_results.append(search)
             await emit_stage(OrchestrationStage.TOOL_COMPLETED, search.as_dict())
