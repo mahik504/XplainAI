@@ -35,20 +35,7 @@ Say goodbye to black-box LLMs. Watch your models think, scrape, cite, and verify
 
 XplainAI operates via a dual-core architecture, utilizing an asynchronous event-driven backend and a reactive, shader-accelerated frontend.
 
-```mermaid
-graph TD
-    User([User / Browser]) -->|WebSocket| WS[FastAPI WebSocket API]
-    WS --> Orchestrator[LangGraph Orchestrator]
-    Orchestrator --> Tools[Web Scraper & Extractors]
-    Orchestrator --> LLM[LLM Service / BYOK Provider]
-    Tools --> Web[(Internet / PDFs / GitHub)]
-    LLM --> Web
-    
-    subgraph "External Agents"
-    Cursor([Cursor / Antigravity]) -->|MCP Protocol| MCPServer[XplainAI MCP Server]
-    MCPServer --> Orchestrator
-    end
-```
+![XplainAI Architecture Graph](docs/screenshots/05-2d-flow-dag.png)
 
 ### Directory Structure
 

@@ -13,13 +13,16 @@ prefixes and carry different guarantees:
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Request, Response, status
 
 from neural_navigator.api import chat, conversations, websocket
-from neural_navigator.core.dependencies import SettingsDep
 from neural_navigator.schemas.base import HealthResponse
 from neural_navigator.utils.constants import SERVICE_NAME
+
+if TYPE_CHECKING:
+    from neural_navigator.core.dependencies import SettingsDep
 
 health_router = APIRouter(tags=["health"])
 

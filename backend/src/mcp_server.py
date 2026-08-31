@@ -1,13 +1,10 @@
-import asyncio
-import os
-import json
 from mcp.server.mcpserver import MCPServer
-import mcp.types as types
 
-from neural_navigator.orchestration.pipeline import run_orchestrated_chat, OrchestrationResult
-from neural_navigator.orchestration.modes import RunMode
-from neural_navigator.schemas.base import ChatMessage, Role
 from neural_navigator.core.config import get_settings
+from neural_navigator.orchestration.modes import RunMode
+from neural_navigator.orchestration.pipeline import OrchestrationResult, run_orchestrated_chat
+from neural_navigator.schemas.base import ChatMessage
+from neural_navigator.utils.constants import Role
 from neural_navigator.services.llm import LLMService, OpenAICompatibleProvider
 
 app = MCPServer("xplainai-mcp", version="1.0.0", description="XplainAI Deep Research Tool")
@@ -24,14 +21,13 @@ async def deep_research(query: str, mode: str = "deep_research") -> str:
     
     # Initialize LLM
     provider = OpenAICompatibleProvider(
-        base_url=settings.llm_api_base,
-        api_key=settings.llm_api_key.get_secret_value() if settings.llm_api_key else "dummy",
-        timeout_seconds=settings.llm_timeout_seconds,
+        base_url=settings.llm_base_url,
+        api_key=settings.openai_api_key.get_secret_value() if settings.openai_api_key else "dummy",
+        timeout_seconds=settings.llm_request_timeout_seconds,
     )
     llm = LLMService(
         provider=provider,
         settings=settings,
-        idle_timeout_seconds=settings.llm_stream_idle_timeout_seconds
     )
     
     messages = [ChatMessage(role=Role.USER, content=query)]
@@ -40,12 +36,17 @@ async def deep_research(query: str, mode: str = "deep_research") -> str:
     assistant_parts = []
     orchestration_data = None
     
+    from typing import Any
+    async def dummy_emit_stage(stage: Any, data: Any = None) -> None:
+        pass
+        
     try:
         async for item in run_orchestrated_chat(
             messages=messages,
             mode=run_mode,
             llm=llm,
             settings=settings,
+            emit_stage=dummy_emit_stage,
         ):
             if isinstance(item, OrchestrationResult):
                 orchestration_data = item.as_dict()
@@ -66,7 +67,7 @@ async def deep_research(query: str, mode: str = "deep_research") -> str:
             
         return result_content
     except Exception as e:
-        return f"Error executing deep research: {str(e)}"
+        return f"Error executing deep research: {e!s}"
     finally:
         await llm.aclose()
 

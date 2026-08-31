@@ -55,7 +55,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "TCH", "RUF", "ASYNC", "S"]
-ignore = ["S101"]  # assert is expected in tests
+ignore = ["S101", "E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106"]

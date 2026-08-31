@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
-from neural_navigator.core.dependencies import PrincipalDep
-from neural_navigator.services.conversations import ConversationStore
+if TYPE_CHECKING:
+    from neural_navigator.core.dependencies import PrincipalDep
+    from neural_navigator.services.conversations import ConversationStore
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 

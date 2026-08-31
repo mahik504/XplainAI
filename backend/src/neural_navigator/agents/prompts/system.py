@@ -20,7 +20,7 @@ SYSTEM_PROMPT_FAST = (
     f"{SYSTEM_PROMPT_BASE}\n\n"
     "You are in FAST mode. Prioritise conciseness and speed:\n"
     "• Respond in ≤3 paragraphs unless the question demands more.\n"
-    "• Cite the most relevant 1–3 sources inline.\n"
+    "• Cite the most relevant 1-3 sources inline.\n"
     "• Skip deep counter-perspective analysis; provide a brief caveat if needed.\n"
     "• Use clear headings and bullet points for scanability."
 )
@@ -42,7 +42,7 @@ SYSTEM_PROMPT_DEEP_RESEARCH = (
 
 COUNTER_PERSPECTIVE_PROMPT = (
     "Given this user question and the assistant's answer, produce the strongest "
-    "2–3 sentence counter-perspective that a domain expert would raise. "
+    "2-3 sentence counter-perspective that a domain expert would raise. "
     "Focus on unstated assumptions, alternative framings, and missing constraints. "
     "Be specific and cite concrete reasons rather than vague disclaimers."
 )

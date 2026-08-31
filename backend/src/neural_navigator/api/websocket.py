@@ -318,12 +318,11 @@ class ChatSocketSession:
             provider = OpenAICompatibleProvider(
                 base_url=frame.custom_api_base,
                 api_key=frame.custom_api_key or "dummy",
-                timeout_seconds=self._settings.llm_timeout_seconds,
+                timeout_seconds=self._settings.llm_request_timeout_seconds,
             )
             active_llm = LLMService(
                 provider=provider,
                 settings=self._settings,
-                idle_timeout_seconds=self._settings.llm_stream_idle_timeout_seconds
             )
 
         model = active_llm.resolve_model(frame.model)
