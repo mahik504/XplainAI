@@ -1,0 +1,62 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: xplainai-ingress
+  labels:
+    app.kubernetes.io/name: xplainai-ingress
+    app.kubernetes.io/part-of: xplainai
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/websocket-services: "xplainai-api"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Forwarded-Proto $scheme";
+spec:
+  tls:
+    - hosts:
+        - app.xplainai.internal
+      secretName: xplainai-tls-cert
+  rules:
+    - host: app.xplainai.internal
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: xplainai-api
+                port:
+                  number: 8000
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: xplainai-api
+                port:
+                  number: 8000
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: xplainai-api
+                port:
+                  number: 8000
+          - path: /metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: xplainai-api
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: xplainai-web
+                port:
+                  number: 80

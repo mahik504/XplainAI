@@ -1,0 +1,62 @@
+# Version control & workspace metadata
+.git
+.gitignore
+.gitattributes
+.agents
+.gemini
+.obsidian
+.vscode
+.idea
+
+# Python caches, virtual environments & coverage
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# Node.js, package managers & frontend build artifacts
+node_modules/
+.pnpm-store/
+frontend/dist/
+frontend/build/
+frontend/playwright-report/
+frontend/test-results/
+.turbo/
+.cache/
+
+# Local databases, storage & runtime artifacts
+*.db
+*.sqlite
+*.sqlite3
+.data/
+data/
+local_data/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Secrets and local overrides (keep .env.example)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.cert
+
+# Temporary files and scratch pads
+tmp/
+temp/
+*.tmp

@@ -4,7 +4,10 @@ import {
   Activity,
   BookOpen,
   Box,
+  ChevronDown,
   FileText,
+  Maximize2,
+  Minimize2,
   Split,
   Terminal,
   X,
@@ -50,6 +53,8 @@ interface ExplainabilityPanelProps {
   missingContext: MissingContextItem[];
   counterPerspective: string | null;
   selectedNodeId: string | null;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
 }
 
 type TabType = "topology" | "sources" | "signals" | "dialectic" | "terminal";
@@ -75,8 +80,11 @@ export function ExplainabilityPanel({
   missingContext,
   counterPerspective,
   selectedNodeId,
+  isMaximized = false,
+  onToggleMaximize,
 }: ExplainabilityPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>("topology");
+  const [stagesExpanded, setStagesExpanded] = useState(false);
   const setInspectorOpen = useUIStore((state) => state.setInspectorOpen);
 
   const showLegend =
@@ -91,16 +99,16 @@ export function ExplainabilityPanel({
   return (
     <aside
       className={cn(
-        "relative flex h-full min-h-0 flex-col overflow-hidden bg-[#070b16] border-l border-white/[0.08] shadow-2xl",
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-[#070b16]/75 backdrop-blur-2xl border-l border-white/[0.08] shadow-2xl transition-all",
         className,
       )}
     >
       {/* Header & Tabs */}
-      <header className="shrink-0 border-b border-white/[0.08] bg-[#0a0f1d]/90 px-3 py-2 backdrop-blur-xl">
+      <header className="shrink-0 border-b border-white/[0.08] bg-[#0a0f1d]/85 px-3 py-2 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="font-mono text-xs font-bold tracking-tight text-cyan-300">
-              {claimFocusActive ? "CLAIM VERIFICATION" : "EXPLAINABILITY COCKPIT"}
+              {claimFocusActive ? "CLAIM VERIFICATION" : "EXPLAIN COCKPIT"}
             </span>
           </div>
 
@@ -140,6 +148,21 @@ export function ExplainabilityPanel({
               />
             </div>
 
+            {onToggleMaximize && (
+              <button
+                type="button"
+                onClick={() => {
+                  hudAudio.playClick(1600);
+                  onToggleMaximize();
+                }}
+                className="flex size-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+                title={isMaximized ? "Restore view" : "Maximize Explain Cockpit"}
+                aria-label={isMaximized ? "Restore view" : "Maximize Explain Cockpit"}
+              >
+                {isMaximized ? <Minimize2 className="size-3.5 text-cyan-300" /> : <Maximize2 className="size-3.5" />}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {
@@ -154,10 +177,32 @@ export function ExplainabilityPanel({
           </div>
         </div>
 
-        {/* Live Stage Progress */}
+        {/* Collapsible Live Stage Progress Bar */}
         {(isStreaming || stageEvents.length > 0) && (
-          <div className="mt-2 pt-2 border-t border-white/[0.06]">
-            <StageRail events={stageEvents} isStreaming={isStreaming} mode={runMode} />
+          <div className="mt-1.5 border-t border-white/[0.06] pt-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                hudAudio.playClick(1500);
+                setStagesExpanded((prev) => !prev);
+              }}
+              className="flex w-full items-center justify-between rounded-lg bg-black/40 px-2 py-1 text-[11px] font-mono text-slate-300 hover:border-cyan-500/30 hover:bg-cyan-950/20 hover:text-cyan-200 transition border border-white/[0.06]"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className={cn("size-1.5 rounded-full", isStreaming ? "bg-cyan-400 animate-pulse" : "bg-emerald-400")} />
+                <span className="font-semibold text-white">Pipeline Stages</span>
+                <span className="text-[10px] text-slate-400">({stageEvents.length} events)</span>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] text-cyan-400/90">
+                <span>{stagesExpanded ? "Hide" : "Expand"}</span>
+                <ChevronDown className={cn("size-3 transition-transform duration-200", stagesExpanded && "rotate-180")} />
+              </div>
+            </button>
+            {stagesExpanded ? (
+              <div className="mt-2 max-h-48 overflow-y-auto px-1 scrollbar-slim border border-white/[0.06] rounded-lg p-2 bg-black/30">
+                <StageRail events={stageEvents} isStreaming={isStreaming} mode={runMode} />
+              </div>
+            ) : null}
           </div>
         )}
       </header>
@@ -254,6 +299,8 @@ function TabButton({
   return (
     <button
       type="button"
+      aria-label={label}
+      title={label}
       onClick={onClick}
       className={cn(
         "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-mono transition",

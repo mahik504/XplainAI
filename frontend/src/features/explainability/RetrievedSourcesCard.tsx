@@ -1,12 +1,22 @@
 import { ExternalLink, BookOpen, Globe, FileText, CheckCircle2 } from "lucide-react";
+import { SourcesSkeleton } from "@/components/common/SourcesSkeleton";
 import type { RetrievedSource } from "@/lib/sources";
 
 interface RetrievedSourcesCardProps {
   sources: RetrievedSource[];
   emptyHint?: boolean;
+  isLoading?: boolean;
 }
 
-export function RetrievedSourcesCard({ sources, emptyHint = false }: RetrievedSourcesCardProps) {
+export function RetrievedSourcesCard({
+  sources,
+  emptyHint = false,
+  isLoading = false,
+}: RetrievedSourcesCardProps) {
+  if (isLoading) {
+    return <SourcesSkeleton />;
+  }
+
   if (sources.length === 0 && !emptyHint) return null;
 
   if (sources.length === 0) {

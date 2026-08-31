@@ -1,19 +1,26 @@
 import type { ClaimFocusMetrics } from "@/lib/claim-focus";
 import type { ResponseStructureAnalysis } from "@/lib/xai";
 import { cn } from "@/lib/utils";
+import { SignalsSkeleton } from "@/components/common/SignalsSkeleton";
 import { Activity, ShieldCheck, HelpCircle, CheckCircle2 } from "lucide-react";
 
 interface StructuralSignalsCardProps {
   analysis: ResponseStructureAnalysis | null;
   claimMetrics?: ClaimFocusMetrics | null;
   retrievedSourcesCount?: number;
+  isLoading?: boolean;
 }
 
 export function StructuralSignalsCard({
   analysis,
   claimMetrics = null,
   retrievedSourcesCount = 0,
+  isLoading = false,
 }: StructuralSignalsCardProps) {
+  if (isLoading) {
+    return <SignalsSkeleton />;
+  }
+
   if (claimMetrics) {
     const supportPct = Math.round(claimMetrics.supportLevel * 100);
     return (

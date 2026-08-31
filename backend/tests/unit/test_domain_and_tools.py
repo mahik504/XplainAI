@@ -59,7 +59,10 @@ def test_graph_engine_topology_generation() -> None:
         text="Quantum computers use qubits in superposition.",
         confidence=0.9,
     )
-    text = "Quantum computers use qubits in superposition to solve problems. Classical bits are binary."
+    text = (
+        "Quantum computers use qubits in superposition to solve problems. "
+        "Classical bits are binary."
+    )
     claims = extract_claims_from_text(text, [evidence])
 
     assert len(claims) >= 1
@@ -82,3 +85,20 @@ def test_graph_engine_topology_generation() -> None:
     assert source_nodes[0].position_3d[2] == 40.0
     assert evidence_nodes[0].position_3d[2] == 20.0
     assert claim_nodes[0].position_3d[2] == 0.0
+
+
+def test_url_extraction_and_safety() -> None:
+    from neural_navigator.orchestration.tool_registry import is_safe_external_url
+    from neural_navigator.orchestration.url_ingest import extract_urls_from_text
+
+    text = (
+        "Check out https://github.com/torvalds/linux and https://arxiv.org/abs/2305.14314 "
+        "along with http://127.0.0.1:8000/secret."
+    )
+    extracted = extract_urls_from_text(text)
+    assert "https://github.com/torvalds/linux" in extracted
+    assert "https://arxiv.org/abs/2305.14314" in extracted
+    # 127.0.0.1 is blocked by safety filter
+    assert "http://127.0.0.1:8000/secret" not in extracted
+    assert is_safe_external_url("http://127.0.0.1") is False
+    assert is_safe_external_url("https://github.com") is True

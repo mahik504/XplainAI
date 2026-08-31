@@ -1,0 +1,80 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: xplainai-network-policy
+  labels:
+    app.kubernetes.io/name: xplainai-network-policy
+    app.kubernetes.io/part-of: xplainai
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: xplainai
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow ingress controller traffic to Web and API pods
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 8000
+    # Allow Web pods to talk to API pods
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: xplainai-web
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow Prometheus scraping
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow API pods to communicate with Postgres & Redis datastores
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: database
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: cache
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow OTel Collector telemetry export
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-collector
+      ports:
+        - protocol: TCP
+          port: 4317
+    # Allow outbound HTTPS for LLM API providers (OpenAI, Anthropic, Google)
+    - ports:
+        - protocol: TCP
+          port: 443

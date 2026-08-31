@@ -207,7 +207,7 @@ export function AnimatedAnnotatedMessage({
   return (
     <div className={cn("w-full space-y-3", className)}>
       {/* Markdown Content (Document reading mode) */}
-      <div className="text-[15px] leading-7 text-foreground/90">
+      <div className="text-[14.5px] leading-7 text-foreground/90 font-sans" aria-live="polite">
         <MessageMarkdown content={content} />
       </div>
 

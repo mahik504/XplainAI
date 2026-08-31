@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: "XplainAI Observability"
+    orgId: 1
+    folder: "XplainAI"
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

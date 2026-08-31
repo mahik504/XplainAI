@@ -21,8 +21,10 @@ interface ConversationState {
   newChat: () => Promise<void>;
   openConversation: (id: string) => Promise<void>;
   removeConversation: (id: string) => Promise<void>;
+  clearAllConversations: () => Promise<void>;
   ensureActiveConversation: () => Promise<string | null>;
   setConversationMode: (id: string, mode: RunMode) => void;
+  updateConversationTitle: (id: string, title: string) => void;
 }
 
 export const useConversationStore = create<ConversationState>()((set, get) => ({
@@ -32,6 +34,14 @@ export const useConversationStore = create<ConversationState>()((set, get) => ({
   loading: false,
   error: null,
 
+  updateConversationTitle: (id, title) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === id ? { ...c, title, updated_at: new Date().toISOString() } : c
+      ),
+    }));
+  },
+
   setConversationMode: (id, mode) => {
     set((state) => ({
       conversationModes: { ...state.conversationModes, [id]: mode },
@@ -39,6 +49,11 @@ export const useConversationStore = create<ConversationState>()((set, get) => ({
   },
 
   hydrate: async () => {
+    const saveEnabled = useUIStore.getState().saveHistoryEnabled;
+    if (!saveEnabled) {
+      set({ conversations: [], loading: false });
+      return;
+    }
     set({ loading: true, error: null });
     try {
       const items = await listConversations();
@@ -53,11 +68,18 @@ export const useConversationStore = create<ConversationState>()((set, get) => ({
 
   newChat: async () => {
     set({ loading: true, error: null });
-    // Clear derived UI immediately so New Chat never leaves stale claim/composer state.
     useUIStore.getState().exitClaimFocus();
     useUIStore.getState().clearComposerPrefill();
     useUIStore.getState().setEvidenceDemandHighlight(false);
     useSessionStore.getState().resetConversation();
+
+    const saveEnabled = useUIStore.getState().saveHistoryEnabled;
+    if (!saveEnabled) {
+      const ephemeralId = `ephemeral_${Date.now()}`;
+      set({ activeConversationId: ephemeralId, loading: false });
+      return;
+    }
+
     try {
       const created = await createConversation();
       set((state) => ({
@@ -99,7 +121,9 @@ export const useConversationStore = create<ConversationState>()((set, get) => ({
 
   removeConversation: async (id: string) => {
     try {
-      await deleteConversation(id);
+      if (!id.startsWith("ephemeral_")) {
+        await deleteConversation(id);
+      }
       const wasActive = get().activeConversationId === id;
       set((state) => ({
         conversations: state.conversations.filter((item) => item.id !== id),
@@ -118,9 +142,35 @@ export const useConversationStore = create<ConversationState>()((set, get) => ({
     }
   },
 
+  clearAllConversations: async () => {
+    const list = get().conversations;
+    set({ loading: true, error: null });
+    try {
+      await Promise.allSettled(list.map((c) => deleteConversation(c.id)));
+      set({ conversations: [], activeConversationId: null, loading: false });
+      useUIStore.getState().exitClaimFocus();
+      useUIStore.getState().clearComposerPrefill();
+      useUIStore.getState().setEvidenceDemandHighlight(false);
+      useSessionStore.getState().resetConversation();
+    } catch (error) {
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : "Failed to clear conversations",
+      });
+    }
+  },
+
   ensureActiveConversation: async () => {
     const current = get().activeConversationId;
     if (current) return current;
+
+    const saveEnabled = useUIStore.getState().saveHistoryEnabled;
+    if (!saveEnabled) {
+      const ephemeralId = `ephemeral_${Date.now()}`;
+      set({ activeConversationId: ephemeralId });
+      return ephemeralId;
+    }
+
     try {
       const created = await createConversation();
       set((state) => ({

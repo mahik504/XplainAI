@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: xplainai-config
+  labels:
+    app.kubernetes.io/name: xplainai
+    app.kubernetes.io/part-of: xplainai
+data:
+  APP_ENV: "production"
+  LOG_FORMAT: "json"
+  LOG_LEVEL: "INFO"
+  PROJECT_NAME: "XplainAI"
+  VERSION: "2.1.0"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  API_CORS_ORIGINS: "https://xplainai.internal,https://app.xplainai.internal"
+  OTEL_SERVICE_NAME: "xplainai-api"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.xplainai.svc.cluster.local:4317"
+  LANGGRAPH_CHECKPOINT_BACKEND: "memory"
+  DEFAULT_RUN_MODE: "deep_research"

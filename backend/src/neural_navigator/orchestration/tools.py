@@ -10,13 +10,14 @@ import operator
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote_plus
 
 import httpx
 import structlog
 
-from neural_navigator.core.config import Settings
+if TYPE_CHECKING:
+    from neural_navigator.core.config import Settings
 
 _logger = structlog.get_logger("neural_navigator.orchestration.tools")
 
@@ -52,7 +53,9 @@ class ToolResult:
         }
 
 
-def _finish(tool: str, started: float, *, status: str, summary: str, data: dict[str, Any] | None = None) -> ToolResult:
+def _finish(
+    tool: str, started: float, *, status: str, summary: str, data: dict[str, Any] | None = None
+) -> ToolResult:
     completed = time.perf_counter() * 1000
     return ToolResult(
         tool=tool,
@@ -96,7 +99,7 @@ async def run_calculator(expression: str) -> ToolResult:
             summary=f"{cleaned} = {value}",
             data={"expression": cleaned, "result": value},
         )
-    except Exception as exc:  # noqa: BLE001 — tool boundary
+    except Exception as exc:
         return _finish("calculator", started, status="error", summary=f"Calculator failed: {exc}")
 
 
@@ -166,7 +169,7 @@ async def run_web_search(query: str, *, max_results: int = 5) -> ToolResult:
             summary=f"Retrieved {len(snippets)} source(s) for “{query[:60]}”",
             data={"query": query, "results": snippets},
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         _logger.warning("tool.web_search.failed", error=str(exc))
         return _finish(
             "web_search",
@@ -214,7 +217,7 @@ async def run_news(query: str, *, settings: Settings) -> ToolResult:
             summary=f"Retrieved {len(items)} news item(s)",
             data={"query": query, "results": items},
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return _finish(
             "news",
             started,
@@ -253,9 +256,12 @@ async def run_weather(city: str, *, settings: Settings) -> ToolResult:
             started,
             status="ok",
             summary=summary,
-            data={"city": city, "payload": {"temp": main.get("temp"), "desc": weather.get("description")}},
+            data={
+                "city": city,
+                "payload": {"temp": main.get("temp"), "desc": weather.get("description")},
+            },
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return _finish(
             "weather",
             started,
@@ -277,10 +283,10 @@ def detect_math_expression(text: str) -> str | None:
     if not match:
         return None
     expr = match.group(1).strip().replace("^", "**")
-    if not re.fullmatch(r"[\d\s\.\+\-\*/%\(\)]+", expr.replace("**", "*")):
-        # allow ** after replace check via simplified pattern
-        if not re.search(r"\d", expr):
-            return None
+    if not re.fullmatch(r"[\d\s\.\+\-\*/%\(\)]+", expr.replace("**", "*")) and not re.search(
+        r"\d", expr
+    ):
+        return None
     return expr
 
 

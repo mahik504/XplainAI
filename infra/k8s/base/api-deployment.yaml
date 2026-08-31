@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xplainai-api
+  labels:
+    app.kubernetes.io/name: xplainai-api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: xplainai
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: xplainai-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: xplainai-api
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: xplainai
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      containers:
+        - name: api
+          image: ghcr.io/mahik504/xplainai-api:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: xplainai-config
+            - secretRef:
+                name: xplainai-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 2

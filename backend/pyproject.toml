@@ -21,7 +21,10 @@ dependencies = [
     "structlog>=24.4",
     "opentelemetry-sdk>=1.27",
     "opentelemetry-instrumentation-fastapi>=0.48b0",
+    "opentelemetry-exporter-otlp>=1.27",
+    "prometheus-client>=0.21",
     "nn-contracts",
+    "mcp>=2.1.1",
 ]
 
 [project.optional-dependencies]
@@ -70,6 +73,10 @@ disallow_any_generics = true
 [[tool.mypy.overrides]]
 module = ["nn_contracts.generated.*"]
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["jose.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

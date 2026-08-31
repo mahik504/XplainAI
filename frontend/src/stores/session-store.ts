@@ -1,4 +1,4 @@
-﻿import type { Edge, Node } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 import { create } from "zustand";
 
 import type { ConnectionState } from "@/app/layouts/TopNav";
@@ -245,7 +245,7 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
   trustSignals: [],
   trustHistory: [],
   responseAnalysis: null,
-  runMode: "balanced",
+  runMode: "deep_research",
   stageEvents: [],
   orchestration: null,
   sourcesRetrieved: 0,
@@ -808,12 +808,17 @@ export const useSessionStore = create<SessionState>()((set, get) => ({
     const model = get().activeModel ?? get().defaultModel;
     const mode = get().runMode;
 
+    const customApiBase = useUIStore.getState().customApiBase;
+    const customApiKey = useUIStore.getState().customApiKey;
+
     const sent = client.send({
       type: "chat.send",
       messages: wire,
       mode,
       ...(model ? { model } : {}),
       ...(options?.conversationId ? { conversation_id: options.conversationId } : {}),
+      ...(customApiBase ? { custom_api_base: customApiBase } : {}),
+      ...(customApiKey ? { custom_api_key: customApiKey } : {}),
     });
 
     if (!sent) {

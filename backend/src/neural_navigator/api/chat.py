@@ -9,22 +9,13 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import AsyncIterator
-from datetime import datetime
+from typing import TYPE_CHECKING
 
 import structlog
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import ConfigDict, Field
 
-from neural_navigator.core.dependencies import (
-    CorrelationIdDep,
-    EventBusDep,
-    LLMServiceDep,
-    PrincipalDep,
-    RequestIdDep,
-    SettingsDep,
-)
 from neural_navigator.schemas.base import (
     BaseSchema,
     ChatMessage,
@@ -42,6 +33,19 @@ from neural_navigator.utils.constants import (
     FinishReason,
     Role,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+    from datetime import datetime
+
+    from neural_navigator.core.dependencies import (
+        CorrelationIdDep,
+        EventBusDep,
+        LLMServiceDep,
+        PrincipalDep,
+        RequestIdDep,
+        SettingsDep,
+    )
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -229,17 +233,13 @@ async def stream_chat_completion(
                     )
                 )
         except LLMError as exc:
-            _logger.error(
-                "chat.stream.failed", run_id=run_id, error_code=exc.code.value
-            )
+            _logger.error("chat.stream.failed", run_id=run_id, error_code=exc.code.value)
             await events.emit(
                 EventType.RUN_FAILED,
                 payload={"run_id": run_id, "error_code": exc.code.value},
                 correlation_id=trace,
             )
-            body = json.dumps(
-                {"run_id": run_id, "code": exc.code.value, "message": exc.message}
-            )
+            body = json.dumps({"run_id": run_id, "code": exc.code.value, "message": exc.message})
             yield f"event: error\ndata: {body}\n\n"
             yield f"data: {SSE_DONE_SENTINEL}\n\n"
             return

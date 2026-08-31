@@ -165,17 +165,25 @@ export const VoiceInputModal = ({ isOpen, onClose, onTranscribed }: VoiceInputMo
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+      {isOpen && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.92, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.92, y: 10 }}
-          className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-cyan-500/40 bg-[#0a0f1d]/95 p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] backdrop-blur-2xl"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+          onClick={onClose}
         >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ type: "spring", damping: 26, stiffness: 360 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-cyan-500/40 bg-[#0a0f1d]/95 p-6 shadow-[0_0_50px_rgba(6,182,212,0.25)] backdrop-blur-2xl"
+          >
           {/* Top Header */}
           <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
             <div className="flex items-center gap-2">
@@ -293,7 +301,8 @@ export const VoiceInputModal = ({ isOpen, onClose, onTranscribed }: VoiceInputMo
             </div>
           </div>
         </motion.div>
-      </div>
-    </AnimatePresence>
-  );
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
 };

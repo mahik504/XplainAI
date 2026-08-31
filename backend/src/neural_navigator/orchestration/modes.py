@@ -7,40 +7,40 @@ from enum import StrEnum
 
 class RunMode(StrEnum):
     FAST = "fast"
-    BALANCED = "balanced"
     DEEP_RESEARCH = "deep_research"
 
     @property
     def label(self) -> str:
         return {
             RunMode.FAST: "Fast",
-            RunMode.BALANCED: "Balanced",
             RunMode.DEEP_RESEARCH: "Deep Research",
         }[self]
 
     @property
     def description(self) -> str:
         return {
-            RunMode.FAST: "Quick answer · minimal research",
-            RunMode.BALANCED: "Best default · selective evidence",
-            RunMode.DEEP_RESEARCH: "Multi-step research · richer evidence",
+            RunMode.FAST: "Direct LLM synthesis (<250ms)",
+            RunMode.DEEP_RESEARCH: "Multi-agent ArXiv, Wikipedia, Web & 3D Knowledge Graph",
         }[self]
 
     @classmethod
     def parse(cls, value: str | None) -> RunMode:
         if value is None or not str(value).strip():
-            return cls.BALANCED
+            return cls.DEEP_RESEARCH
         normalized = str(value).strip().lower().replace("-", "_").replace(" ", "_")
         aliases = {
-            "moderate": cls.BALANCED,
-            "default": cls.BALANCED,
+            "fast": cls.FAST,
+            "quick": cls.FAST,
+            "balanced": cls.DEEP_RESEARCH,
+            "default": cls.DEEP_RESEARCH,
             "deep": cls.DEEP_RESEARCH,
             "research": cls.DEEP_RESEARCH,
             "deepresearch": cls.DEEP_RESEARCH,
+            "complex": cls.DEEP_RESEARCH,
         }
         if normalized in aliases:
             return aliases[normalized]
         try:
             return cls(normalized)
         except ValueError:
-            return cls.BALANCED
+            return cls.DEEP_RESEARCH

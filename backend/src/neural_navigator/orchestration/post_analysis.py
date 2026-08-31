@@ -127,6 +127,83 @@ _CONTEXT_RULES: list[tuple[re.Pattern[str], list[MissingContextItem]]] = [
             ),
         ],
     ),
+    (
+        re.compile(r"\b(quantum|qubit|surface code|color code|error correction)\b", re.I),
+        [
+            MissingContextItem(
+                "Physical Hardware Architecture",
+                "high",
+                "Superconducting vs Trapped-Ion vs Neutral-Atom changes physical error rates.",
+            ),
+            MissingContextItem(
+                "Syndrome Extraction Overhead",
+                "high",
+                (
+                    "Color codes require higher connectivity; "
+                    "surface codes require fewer non-local couplers."
+                ),
+            ),
+            MissingContextItem(
+                "Threshold Error Rate",
+                "medium",
+                (
+                    "Empirical fault-tolerant threshold dictates "
+                    "practical feasibility (e.g. ~1% vs 0.1%)."
+                ),
+            ),
+        ],
+    ),
+    (
+        re.compile(r"\b(webgpu|webgl|shader|compute shader|graphics)\b", re.I),
+        [
+            MissingContextItem(
+                "Target Browser & Hardware Matrix",
+                "high",
+                (
+                    "WebGPU availability differs across mobile browsers, "
+                    "Linux distributions, and older GPUs."
+                ),
+            ),
+            MissingContextItem(
+                "Data Transfer Overhead",
+                "medium",
+                "Compute shader dispatch gains can be eclipsed by CPU-GPU buffer staging overhead.",
+            ),
+        ],
+    ),
+    (
+        re.compile(r"\b(raft|paxos|consensus|distributed|leader election)\b", re.I),
+        [
+            MissingContextItem(
+                "Network Topology & Asymmetric Partitions",
+                "high",
+                (
+                    "Pre-vote extensions and heartbeats behave differently "
+                    "under partial network partitions."
+                ),
+            ),
+            MissingContextItem(
+                "Read Scalability Architecture",
+                "medium",
+                "Leader leases vs state machine index checks impact read throughput.",
+            ),
+        ],
+    ),
+    (
+        re.compile(r"\b(epigenetic|rejuvenation|yamanaka|cellular|biology)\b", re.I),
+        [
+            MissingContextItem(
+                "Teratoma & Tumorigenesis Risks",
+                "high",
+                "Transient vs constitutive expression of Oct4/Sox2 determines safety bounds.",
+            ),
+            MissingContextItem(
+                "Tissue Specificity & Delivery Mechanism",
+                "medium",
+                "AAV vector vs mRNA-LNP delivery changes in-vivo bioavailability.",
+            ),
+        ],
+    ),
 ]
 
 
@@ -134,10 +211,13 @@ def detect_missing_context(user_query: str) -> list[MissingContextItem]:
     text = user_query.strip()
     if not text or _CREATIVE_HINTS.search(text):
         return []
-    if not _DECISION_HINTS.search(text) and "?" not in text:
+    if (
+        not _DECISION_HINTS.search(text)
+        and "?" not in text
+        and len(text.split()) < 6
+    ):
         # Only surface when the question looks decision-shaped or open-ended.
-        if len(text.split()) < 6:
-            return []
+        return []
 
     found: list[MissingContextItem] = []
     for pattern, items in _CONTEXT_RULES:
@@ -196,10 +276,40 @@ def build_counter_perspective(
             "asset rather than payment infrastructure; that framing changes which properties "
             "matter most."
         )
+    if "quantum" in lowered or "qubit" in lowered or "surface code" in lowered:
+        return (
+            "Alternative perspective: while planar surface codes dominate superconducting "
+            "systems due to nearest-neighbor connectivity, quantum LDPC and 3D color codes "
+            "provide substantially lower qubit overhead ratios if long-range couplers or "
+            "transversal gates are physically realizable."
+        )
+    if "webgpu" in lowered or "webgl" in lowered:
+        return (
+            "Alternative perspective: WebGL 2.0 still maintains universal cross-platform "
+            "ubiquity with lower initialization boilerplate, whereas WebGPU compute shaders "
+            "yield maximum gains only on heavy SIMD / large-scale force-directed topology "
+            "workloads."
+        )
+    if "raft" in lowered or "paxos" in lowered:
+        return (
+            "Alternative perspective: Multi-Paxos allows out-of-order log commitments and "
+            "lower tail latency under multi-leader deployments, whereas Raft enforces strict "
+            "sequential log matching for formal verifiability and cognitive clarity."
+        )
+    if "epigenetic" in lowered or "rejuvenation" in lowered:
+        return (
+            "Alternative perspective: partial reprogramming balances rejuvenation against "
+            "the threshold of oncogenic dedifferentiation; long-term epigenetic fidelity "
+            "requires tight stoichiometric regulation of Yamanaka factors."
+        )
     if _DECISION_HINTS.search(query):
         return (
             "Alternative perspective: a different weighting of constraints (risk, cost, "
             "time, or simplicity) could reverse the recommendation. Treat the answer as "
             "one structured view, not a unique optimum."
         )
-    return None
+    return (
+        "Alternative perspective: empirical findings in this domain depend heavily on "
+        "benchmark criteria and underlying assumptions. Alternative experimental paradigms "
+        "may lead to diverging conclusions."
+    )

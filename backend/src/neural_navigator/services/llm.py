@@ -14,14 +14,12 @@ import asyncio
 import json
 import random
 import time
-from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 import httpx
 import structlog
 
-from neural_navigator.core.config import Settings
 from neural_navigator.schemas.base import ChatMessage, Usage
 from neural_navigator.utils.constants import (
     LLM_RETRY_BASE_DELAY_SECONDS,
@@ -32,6 +30,11 @@ from neural_navigator.utils.constants import (
     LLMProviderName,
     Role,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Sequence
+
+    from neural_navigator.core.config import Settings
 
 _logger = structlog.stdlib.get_logger(__name__)
 
@@ -172,7 +175,7 @@ class OpenAICompatibleProvider:
 
     name = LLMProviderName.OPENAI.value
 
-    _FINISH_REASONS = {
+    _FINISH_REASONS: ClassVar[dict[str, FinishReason]] = {
         "stop": FinishReason.STOP,
         "length": FinishReason.LENGTH,
         "tool_calls": FinishReason.TOOL_CALLS,
@@ -190,9 +193,7 @@ class OpenAICompatibleProvider:
         self._include_usage = include_usage
         self._client = httpx.AsyncClient(
             base_url=base_url,
-            timeout=httpx.Timeout(
-                connect=10.0, read=timeout_seconds, write=10.0, pool=10.0
-            ),
+            timeout=httpx.Timeout(connect=10.0, read=timeout_seconds, write=10.0, pool=10.0),
             limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
             headers={
                 "Authorization": f"Bearer {api_key}",
@@ -212,8 +213,7 @@ class OpenAICompatibleProvider:
         payload: dict[str, Any] = {
             "model": model,
             "messages": [
-                {"role": message.role.value, "content": message.content}
-                for message in messages
+                {"role": message.role.value, "content": message.content} for message in messages
             ],
             "temperature": temperature,
             "max_tokens": max_output_tokens,
@@ -223,9 +223,7 @@ class OpenAICompatibleProvider:
             payload["stream_options"] = {"include_usage": True}
 
         try:
-            async with self._client.stream(
-                "POST", "/chat/completions", json=payload
-            ) as response:
+            async with self._client.stream("POST", "/chat/completions", json=payload) as response:
                 if response.status_code >= 400:
                     body = (await response.aread()).decode("utf-8", errors="replace")
                     raise self._map_status(response.status_code, body)
@@ -237,9 +235,7 @@ class OpenAICompatibleProvider:
         except httpx.TimeoutException as exc:
             raise LLMTimeoutError(f"model request timed out: {exc}") from exc
         except httpx.HTTPError as exc:
-            raise LLMProviderError(
-                f"model transport failure: {exc}", retryable=True
-            ) from exc
+            raise LLMProviderError(f"model transport failure: {exc}", retryable=True) from exc
 
     def _parse_line(self, line: str) -> LLMChunk | None:
         stripped = line.strip()
@@ -413,6 +409,7 @@ class LLMService:
         temperature: float,
         max_output_tokens: int,
     ) -> AsyncGenerator[LLMChunk, None]:
+        start_time = time.perf_counter()
         deadline = time.monotonic() + self._settings.llm_request_timeout_seconds
         stream = self._provider.stream_chat(
             messages,
@@ -437,9 +434,20 @@ class LLMService:
                     return
                 except TimeoutError as exc:
                     raise LLMTimeoutError(
-                        "model stream stalled for "
-                        f"{self._idle_timeout_seconds}s without output"
+                        f"model stream stalled for {self._idle_timeout_seconds}s without output"
                     ) from exc
+
+                if chunk.usage:
+                    from neural_navigator.core.metrics import record_llm_duration, record_llm_tokens
+
+                    record_llm_tokens(
+                        self.provider_name,
+                        model,
+                        chunk.usage.prompt_tokens,
+                        chunk.usage.completion_tokens,
+                    )
+                    record_llm_duration(self.provider_name, model, time.perf_counter() - start_time)
+
                 yield chunk
         finally:
             await stream.aclose()
@@ -481,9 +489,7 @@ class LLMService:
     @staticmethod
     def _backoff_delay(attempt: int) -> float:
         """Exponential backoff with full jitter, to avoid synchronised retries."""
-        ceiling = min(
-            LLM_RETRY_MAX_DELAY_SECONDS, LLM_RETRY_BASE_DELAY_SECONDS * (2**attempt)
-        )
+        ceiling = min(LLM_RETRY_MAX_DELAY_SECONDS, LLM_RETRY_BASE_DELAY_SECONDS * (2**attempt))
         return random.uniform(0, ceiling)  # noqa: S311 - jitter, not cryptography
 
     async def aclose(self) -> None:
@@ -499,8 +505,7 @@ def build_llm_provider(settings: Settings) -> LLMProvider:
     if settings.llm_provider is LLMProviderName.OPENAI:
         if settings.openai_api_key is None:
             raise RuntimeError(
-                "LLM_PROVIDER=openai requires OPENAI_API_KEY to be set "
-                "(no silent Echo fallback)"
+                "LLM_PROVIDER=openai requires OPENAI_API_KEY to be set (no silent Echo fallback)"
             )
         return OpenAICompatibleProvider(
             base_url=settings.llm_base_url,

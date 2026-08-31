@@ -14,8 +14,7 @@ from __future__ import annotations
 
 import time
 
-from fastapi import APIRouter, Response, status
-from starlette.requests import Request
+from fastapi import APIRouter, Request, Response, status
 
 from neural_navigator.api import chat, conversations, websocket
 from neural_navigator.core.dependencies import SettingsDep
@@ -56,9 +55,7 @@ async def liveness(request: Request, settings: SettingsDep) -> HealthResponse:
     ),
     responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": HealthResponse}},
 )
-async def readiness(
-    request: Request, response: Response, settings: SettingsDep
-) -> HealthResponse:
+async def readiness(request: Request, response: Response, settings: SettingsDep) -> HealthResponse:
     checks = {
         "llm_service": getattr(request.app.state, "llm_service", None) is not None,
         "event_bus": getattr(request.app.state, "event_bus", None) is not None,
@@ -75,6 +72,18 @@ async def readiness(
         uptime_seconds=_uptime_seconds(request),
         checks=checks,
     )
+
+
+@health_router.get(
+    "/metrics",
+    summary="Prometheus metrics",
+    description="Exposes Prometheus formatted telemetry metrics for scraping.",
+)
+async def metrics() -> Response:
+    from neural_navigator.core.metrics import get_metrics_payload
+
+    body, content_type = get_metrics_payload()
+    return Response(content=body, media_type=content_type)
 
 
 api_router = APIRouter()

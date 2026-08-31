@@ -34,9 +34,7 @@ PROMPTS = [
 async def one(ws, prompt: str) -> dict:
     t0 = time.perf_counter()
     await ws.send(
-        json.dumps(
-            {"type": "chat.send", "messages": [{"role": "user", "content": prompt}]}
-        )
+        json.dumps({"type": "chat.send", "messages": [{"role": "user", "content": prompt}]})
     )
     parts: list[str] = []
     first: float | None = None
@@ -136,6 +134,6 @@ if __name__ == "__main__":
         asyncio.run(main())
     except SystemExit:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         print(f"FAIL unexpected {type(exc).__name__}: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc

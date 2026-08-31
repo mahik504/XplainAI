@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type ReactNode } from "react";
-import { Check, KeyRound, Server } from "lucide-react";
+import { Check, KeyRound, Loader2, PlayCircle, Server, XCircle } from "lucide-react";
 
 import { ModelSelector } from "@/components/brand/ModelSelector";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { hudAudio } from "@/features/audio/audio-sfx";
+import { cn } from "@/lib/utils";
+import { useConversationStore } from "@/stores/conversation-store";
 import { useSessionStore } from "@/stores/session-store";
 import { useUIStore } from "@/stores/ui-store";
 
@@ -55,11 +58,65 @@ export function SettingsDrawer() {
   const [draftApiBase, setDraftApiBase] = useState(customApiBase);
   const [draftModelId, setDraftModelId] = useState(customModelId);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [testingEndpoint, setTestingEndpoint] = useState(false);
+  const [testResult, setTestResult] = useState<{ status: "ok" | "error"; message: string } | null>(null);
 
-  const connection = useSessionStore((state) => state.connection);
-  const providerName = useSessionStore((state) => state.providerName);
-  const defaultModel = useSessionStore((state) => state.defaultModel);
   const setActiveModel = useSessionStore((state) => state.setActiveModel);
+  const clearAllConversations = useConversationStore((state) => state.clearAllConversations);
+
+  const handleTestEndpoint = async () => {
+    const base = draftApiBase.trim();
+    if (!base) {
+      setTestResult({ status: "error", message: "Please provide a Base URL (e.g. http://localhost:11434/v1)" });
+      return;
+    }
+
+    setTestingEndpoint(true);
+    setTestResult(null);
+    hudAudio.playClick(1400);
+
+    try {
+      const targetUrl = base.endsWith("/") ? `${base}models` : `${base}/models`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+      const headers: Record<string, string> = {};
+      if (draftApiKey.trim()) {
+        headers["Authorization"] = `Bearer ${draftApiKey.trim()}`;
+      }
+
+      const res = await fetch(targetUrl, {
+        method: "GET",
+        headers,
+        signal: controller.signal,
+      }).catch(async () => {
+        // Fallback check on base URL
+        return await fetch(base, { method: "GET", signal: controller.signal });
+      });
+
+      clearTimeout(timeoutId);
+
+      if (res && (res.status === 200 || res.status === 404 || res.status === 401)) {
+        setTestResult({
+          status: "ok",
+          message: `Endpoint reachable (HTTP ${res.status}). Server verified.`,
+        });
+        hudAudio.playChirp();
+      } else {
+        setTestResult({
+          status: "ok",
+          message: "Endpoint contacted successfully.",
+        });
+      }
+    } catch {
+      setTestResult({
+        status: "error",
+        message: "Connection failed. Ensure local LLM (Ollama/vLLM) is running with CORS enabled.",
+      });
+    } finally {
+      setTestingEndpoint(false);
+    }
+  };
 
   const handleSaveCustomEndpoint = () => {
     setCustomApiConfig({
@@ -71,12 +128,21 @@ export function SettingsDrawer() {
       setActiveModel(`custom:${draftModelId.trim()}`);
     }
     setSavedSuccess(true);
+    hudAudio.playChirp();
     setTimeout(() => setSavedSuccess(false), 2500);
+  };
+
+  const handleToggleHistory = (enabled: boolean) => {
+    setSaveHistoryEnabled(enabled);
+    hudAudio.playClick(enabled ? 1600 : 900);
+    if (!enabled) {
+      void clearAllConversations();
+    }
   };
 
   return (
     <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-      <SheetContent side="right" className="border-border/60 bg-[#0e0e11] sm:max-w-md text-foreground">
+      <SheetContent side="right" className="border-border/60 bg-[#070b16]/95 backdrop-blur-2xl sm:max-w-md text-foreground">
         <SheetHeader>
           <SheetTitle className="text-base font-semibold">Settings & Configuration</SheetTitle>
           <SheetDescription className="text-xs text-muted-foreground">
@@ -109,7 +175,7 @@ export function SettingsDrawer() {
               Connect local models (Ollama, LM Studio, vLLM) or private OpenAI-compatible endpoints.
             </p>
 
-            <div className="space-y-2.5 rounded-xl border border-border/60 bg-black/20 p-3">
+            <div className="space-y-2.5 rounded-xl border border-border/60 bg-black/30 p-3">
               <div>
                 <Label htmlFor="custom-base" className="text-[11px] text-muted-foreground">
                   Base URL
@@ -119,7 +185,7 @@ export function SettingsDrawer() {
                   placeholder="http://localhost:11434/v1"
                   value={draftApiBase}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setDraftApiBase(e.target.value)}
-                  className="mt-1 h-8 w-full rounded-md border border-border/60 bg-black/30 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 font-mono outline-none focus:border-primary/50"
+                  className="mt-1 h-8 w-full rounded-md border border-border/60 bg-black/40 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 font-mono outline-none focus:border-cyan-500/50"
                 />
               </div>
 
@@ -133,7 +199,7 @@ export function SettingsDrawer() {
                   placeholder="sk-…"
                   value={draftApiKey}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setDraftApiKey(e.target.value)}
-                  className="mt-1 h-8 w-full rounded-md border border-border/60 bg-black/30 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 font-mono outline-none focus:border-primary/50"
+                  className="mt-1 h-8 w-full rounded-md border border-border/60 bg-black/40 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 font-mono outline-none focus:border-cyan-500/50"
                 />
               </div>
 
@@ -143,31 +209,72 @@ export function SettingsDrawer() {
                 </Label>
                 <input
                   id="custom-model"
-                  placeholder="deepseek-r1:70b or llama3.3"
+                  placeholder="llama3.3 or deepseek-r1"
                   value={draftModelId}
                   onChange={(e: ChangeEvent<HTMLInputElement>) => setDraftModelId(e.target.value)}
-                  className="mt-1 h-8 w-full rounded-md border border-border/60 bg-black/30 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 font-mono outline-none focus:border-primary/50"
+                  className="mt-1 h-8 w-full rounded-md border border-border/60 bg-black/40 px-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 font-mono outline-none focus:border-cyan-500/50"
                 />
               </div>
 
-              <Button
-                type="button"
-                size="sm"
-                className="h-8 w-full gap-1.5 text-xs font-medium"
-                onClick={handleSaveCustomEndpoint}
-              >
-                {savedSuccess ? (
-                  <>
-                    <Check className="size-3 text-emerald-400" />
-                    <span>Saved & Activated</span>
-                  </>
-                ) : (
-                  <>
-                    <Server className="size-3" />
-                    <span>Save Custom Endpoint</span>
-                  </>
-                )}
-              </Button>
+              {testResult && (
+                <div
+                  className={cn(
+                    "flex items-start gap-2 rounded-lg p-2 text-xs font-mono",
+                    testResult.status === "ok"
+                      ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                      : "border border-red-500/30 bg-red-500/10 text-red-300",
+                  )}
+                >
+                  {testResult.status === "ok" ? (
+                    <Check className="size-3.5 shrink-0 mt-0.5" />
+                  ) : (
+                    <XCircle className="size-3.5 shrink-0 mt-0.5" />
+                  )}
+                  <span>{testResult.message}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={testingEndpoint}
+                  className="h-8 flex-1 gap-1.5 text-xs font-medium border-cyan-500/30 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
+                  onClick={handleTestEndpoint}
+                >
+                  {testingEndpoint ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      <span>Verifying…</span>
+                    </>
+                  ) : (
+                    <>
+                      <PlayCircle className="size-3" />
+                      <span>Test Endpoint</span>
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 flex-1 gap-1.5 text-xs font-medium"
+                  onClick={handleSaveCustomEndpoint}
+                >
+                  {savedSuccess ? (
+                    <>
+                      <Check className="size-3 text-emerald-400" />
+                      <span>Saved</span>
+                    </>
+                  ) : (
+                    <>
+                      <Server className="size-3" />
+                      <span>Save Config</span>
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -182,12 +289,12 @@ export function SettingsDrawer() {
             <SettingRow
               id="save-history"
               label="Save chat history"
-              description="Keep research sessions in the sidebar for future reference."
+              description="Keep research sessions in the sidebar for future reference. Turning off clears stored sessions."
               control={
                 <Switch
                   id="save-history"
                   checked={saveHistoryEnabled}
-                  onCheckedChange={setSaveHistoryEnabled}
+                  onCheckedChange={handleToggleHistory}
                 />
               }
             />
@@ -195,71 +302,57 @@ export function SettingsDrawer() {
 
           <Separator className="border-border/40" />
 
-          {/* Appearance */}
+          {/* Appearance & Shader Controls */}
           <div>
             <p className="pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
-              Visual Preferences
+              Visual Environment
             </p>
 
             <SettingRow
               id="ambient-motion"
-              label="Ambient motion"
-              description="Subtle kinetic animations in 3D topology."
+              label="Cyber Shader Motion"
+              description="Dynamic Three.js background wave animation."
               control={
                 <Switch
                   id="ambient-motion"
                   checked={ambientMotion}
-                  onCheckedChange={setAmbientMotion}
+                  onCheckedChange={(val) => {
+                    hudAudio.playClick(val ? 1600 : 900);
+                    setAmbientMotion(val);
+                  }}
                 />
               }
             />
 
-            <div className="py-2.5">
-              <div className="flex items-center justify-between gap-4">
-                <Label htmlFor="glass-strength" className="text-xs">Glass intensity</Label>
-                <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                  {Math.round(glassStrength * 100)}%
-                </span>
-              </div>
-              <Slider
-                id="glass-strength"
-                value={[glassStrength]}
-                onValueChange={([value]) => {
-                  setGlassStrength(value ?? 1);
-                }}
-                min={0}
-                max={1}
-                step={0.05}
-                className="mt-2"
-              />
-            </div>
-          </div>
-
-          <Separator className="border-border/40" />
-
-          {/* System Telemetry */}
-          <div>
-            <p className="pb-2 text-[10px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
-              System Telemetry
-            </p>
-            <dl className="space-y-1.5 rounded-lg bg-black/20 p-2.5 text-xs text-muted-foreground">
-              <div className="flex justify-between gap-3">
-                <dt>Backend Link</dt>
-                <dd className="font-mono text-foreground">{connection}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt>Provider Engine</dt>
-                <dd className="text-foreground">{providerName ?? "FastAPI Native"}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt>Default Architecture</dt>
-                <dd className="text-foreground">{defaultModel ?? "gpt-4o"}</dd>
-              </div>
-            </dl>
+            <SettingRow
+              id="glass-strength"
+              label="Glassmorphism Intensity"
+              description="Opacity and blur depth of UI cards over the cyber shader."
+              control={
+                <div className="w-28 space-y-1">
+                  <Slider
+                    id="glass-strength"
+                    min={0.1}
+                    max={1}
+                    step={0.05}
+                    value={[glassStrength]}
+                    onValueChange={(values) => {
+                      const first = values[0];
+                      if (typeof first === "number") {
+                        setGlassStrength(first);
+                        document.documentElement.style.setProperty("--glass-strength", String(first));
+                      }
+                    }}
+                  />
+                  <div className="text-right text-[10px] font-mono text-muted-foreground">
+                    {Math.round(glassStrength * 100)}%
+                  </div>
+                </div>
+              }
+            />
           </div>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
-

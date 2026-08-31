@@ -44,8 +44,15 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
   };
 
   const link = connection === "offline" ? storeConnection : connection;
+  const messages = useSessionStore((state) => state.messages);
+  const firstUserMessage = messages.find((m) => m.role === "user")?.content;
+  const activeConv = conversations.find((item) => item.id === activeConversationId);
   const conversationTitle =
-    conversations.find((item) => item.id === activeConversationId)?.title ?? "New research inquiry";
+    activeConv?.title && activeConv.title !== "New conversation"
+      ? activeConv.title
+      : firstUserMessage
+        ? firstUserMessage.slice(0, 52) + (firstUserMessage.length > 52 ? "…" : "")
+        : "New research inquiry";
 
   const totalClaims = responseAnalysis?.sentences?.filter((s) => s.category === "claim").length ?? 0;
   const totalSources = retrievedSources.length;
@@ -65,7 +72,7 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
               toggleSidebar();
             }
           }}
-          className="flex size-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
+          className="flex min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.06] hover:text-white touch-manipulation"
           title="Toggle history (Ctrl+B)"
           aria-label="Toggle history"
         >
@@ -78,7 +85,7 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
             hudAudio.playChirp();
             void newChat();
           }}
-          className="group flex items-center gap-2.5 rounded-lg px-2 py-1 transition hover:bg-white/[0.04]"
+          className="group flex min-h-[44px] sm:min-h-8 items-center gap-2.5 rounded-lg px-2 py-1 transition hover:bg-white/[0.04] touch-manipulation"
         >
           <XplainAiLogo size={24} />
           <span className="font-display text-sm font-semibold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
@@ -99,26 +106,26 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
       </div>
 
       {/* Center: Conversation Title */}
-      <div className="hidden max-w-sm truncate text-center md:block">
-        <span className="text-xs font-mono text-slate-400 tracking-wide">
+      <div className="hidden max-w-md truncate text-center md:block">
+        <span className="text-xs font-mono text-slate-400 tracking-wide truncate">
           {conversationTitle}
         </span>
       </div>
 
       {/* Right: Quick Tools, Model Selector, Analysis Pill, Settings */}
-      {/* Right: Audio SFX Toggle, Analysis Pill, Model Selector, Settings */}
       <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Audio SFX Toggle */}
         <button
           type="button"
           onClick={handleToggleAudio}
           className={cn(
-            "flex size-8 items-center justify-center rounded-lg transition",
+            "flex min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 items-center justify-center rounded-lg transition touch-manipulation",
             isAudioMuted
               ? "text-zinc-600 hover:text-zinc-400"
               : "text-cyan-400/80 hover:bg-cyan-500/10 hover:text-cyan-300",
           )}
           title={isAudioMuted ? "Unmute audio SFX" : "Mute audio SFX"}
+          aria-label={isAudioMuted ? "Unmute audio SFX" : "Mute audio SFX"}
         >
           {isAudioMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
         </button>
@@ -132,12 +139,13 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
               toggleInspector();
             }}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono transition",
+              "flex min-h-[44px] sm:min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono transition touch-manipulation",
               inspectorOpen
                 ? "border-cyan-400/60 bg-cyan-500/15 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
                 : "border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200",
             )}
             title="Inspect 3D Knowledge Graph & Claims"
+            aria-label="Inspect 3D Knowledge Graph & Claims"
           >
             <Eye className="size-3.5 text-cyan-400" />
             <span>Analysis</span>
@@ -152,7 +160,7 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="size-8 text-slate-400 hover:bg-white/[0.06] hover:text-white"
+          className="min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 text-slate-400 hover:bg-white/[0.06] hover:text-white touch-manipulation"
           onClick={() => {
             hudAudio.playClick();
             setSettingsOpen(true);

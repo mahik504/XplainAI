@@ -1,12 +1,13 @@
 from neural_navigator.orchestration.modes import RunMode
-from neural_navigator.orchestration.pipeline import analyze_query, _decompose_research_tasks
+from neural_navigator.orchestration.pipeline import _decompose_research_tasks, analyze_query
 
 
 def test_mode_parse_aliases() -> None:
     assert RunMode.parse("fast") is RunMode.FAST
-    assert RunMode.parse("moderate") is RunMode.BALANCED
+    assert RunMode.parse("moderate") is RunMode.DEEP_RESEARCH
     assert RunMode.parse("deep") is RunMode.DEEP_RESEARCH
-    assert RunMode.parse(None) is RunMode.BALANCED
+    assert RunMode.parse("complex") is RunMode.DEEP_RESEARCH
+    assert RunMode.parse(None) is RunMode.DEEP_RESEARCH
 
 
 def test_analyze_query_research_need() -> None:
@@ -23,7 +24,7 @@ def test_deep_research_tasks_unique() -> None:
         deep=True,
     )
     assert len(tasks) >= 2
-    assert len(tasks) == len(set(task.lower() for task in tasks))
+    assert len(tasks) == len({task.lower() for task in tasks})
 
 
 def test_missing_context_and_counter() -> None:
@@ -42,8 +43,11 @@ def test_missing_context_and_counter() -> None:
         mode="balanced",
     )
     assert counter is not None
-    assert build_counter_perspective(
-        user_query="Tell me a joke",
-        answer="Why did the chicken cross the road? " * 4,
-        mode="balanced",
-    ) is None
+    assert (
+        build_counter_perspective(
+            user_query="Tell me a joke",
+            answer="Why did the chicken cross the road? " * 4,
+            mode="balanced",
+        )
+        is None
+    )

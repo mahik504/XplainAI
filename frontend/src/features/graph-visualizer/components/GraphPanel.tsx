@@ -15,6 +15,8 @@ import { ArrowLeft, Workflow, Box, Layers } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/EmptyState";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { GraphSkeleton } from "@/components/common/GraphSkeleton";
 import { PanelShell, type PanelProps } from "@/components/common/PanelShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,7 @@ interface GraphPanelProps extends PanelProps {
   onExitClaimFocus?: () => void;
   /** Hide outer panel chrome when embedded in ExplainabilityPanel. */
   compactChrome?: boolean;
+  isLoading?: boolean;
 }
 
 const emptyNodes: Node[] = [];
@@ -113,6 +116,7 @@ export function GraphPanel({
   claimFocusActive = false,
   onExitClaimFocus,
   compactChrome = false,
+  isLoading = false,
 }: GraphPanelProps) {
   const [viewMode, setViewMode] = useState<"2d" | "3d">("3d");
   const [flowNodes, setFlowNodes, onNodesChange] = useNodesState(nodes);
@@ -127,6 +131,10 @@ export function GraphPanel({
   useEffect(() => {
     setFlowEdges(edges);
   }, [edges, setFlowEdges]);
+
+  if (isLoading) {
+    return <GraphSkeleton className={className} />;
+  }
 
   const isEmpty = flowNodes.length === 0;
   const activeNodeId = useMemo(() => resolveActiveNodeId(flowNodes), [flowNodes]);
@@ -232,13 +240,20 @@ export function GraphPanel({
         )}
       >
         {viewMode === "3d" ? (
-          <EvidenceConstellation3D
-            nodes={nodes3D}
-            edges={edges3D}
-            activeNodeId={focusNodeId || activeNodeId}
-            onNodeClick={handle3DNodeClick}
-          />
+          <ErrorBoundary
+            fallbackType="canvas"
+            onSwitchTo2D={() => setViewMode("2d")}
+          >
+            <EvidenceConstellation3D
+              nodes={nodes3D}
+              edges={edges3D}
+              activeNodeId={focusNodeId || activeNodeId}
+              onNodeClick={handle3DNodeClick}
+              onSwitchTo2D={() => setViewMode("2d")}
+            />
+          </ErrorBoundary>
         ) : (
+
           <ReactFlow
             nodes={flowNodes}
             edges={flowEdges}

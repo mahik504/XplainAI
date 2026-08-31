@@ -8,8 +8,12 @@ routers. Nothing below this module reaches for a global.
 from __future__ import annotations
 
 import time
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request
@@ -18,18 +22,14 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
-#: Spelled as a literal because Starlette renamed its 422 constant; importing either
-#: spelling emits a deprecation warning on one supported version or the other.
-HTTP_422_UNPROCESSABLE_ENTITY = 422
-
+from neural_navigator.api.middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 from neural_navigator.api.router import api_router, health_router, ws_router
 from neural_navigator.api.websocket import connection_registry
 from neural_navigator.core.config import Settings, get_settings
 from neural_navigator.core.dependencies import get_request_id
 from neural_navigator.core.logging import RequestContextMiddleware, configure_logging
+from neural_navigator.core.telemetry import init_telemetry
 from neural_navigator.schemas.base import ErrorItem, problem_from_exception, serialise_problem
-from pathlib import Path
-
 from neural_navigator.services.conversations import ConversationStore
 from neural_navigator.services.events import InMemoryEventBus
 from neural_navigator.services.llm import LLMService, build_llm_provider
@@ -41,6 +41,10 @@ from neural_navigator.utils.constants import (
     WS_V1_PREFIX,
     ErrorCode,
 )
+
+#: Spelled as a literal because Starlette renamed its 422 constant; importing either
+#: spelling emits a deprecation warning on one supported version or the other.
+HTTP_422_UNPROCESSABLE_ENTITY = 422
 
 _logger = structlog.stdlib.get_logger(__name__)
 
@@ -85,9 +89,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
     """Render every failure as an RFC 9457 problem document."""
 
     @app.exception_handler(RequestValidationError)
-    async def _on_validation_error(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
+    async def _on_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
         problem = problem_from_exception(
             status=HTTP_422_UNPROCESSABLE_ENTITY,
             title="Request validation failed",
@@ -104,9 +106,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
                 for error in exc.errors()
             ],
         )
-        return JSONResponse(
-            status_code=problem.status, content=serialise_problem(problem)
-        )
+        return JSONResponse(status_code=problem.status, content=serialise_problem(problem))
 
     @app.exception_handler(HTTPException)
     async def _on_http_exception(request: Request, exc: HTTPException) -> JSONResponse:
@@ -127,9 +127,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def _on_unhandled(request: Request, exc: Exception) -> JSONResponse:
         request_id = get_request_id(request)
-        _logger.exception(
-            "http.unhandled_exception", path=request.url.path, request_id=request_id
-        )
+        _logger.exception("http.unhandled_exception", path=request.url.path, request_id=request_id)
         problem = problem_from_exception(
             status=HTTP_500_INTERNAL_SERVER_ERROR,
             title="Internal server error",
@@ -140,9 +138,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
             instance=request.url.path,
             request_id=request_id,
         )
-        return JSONResponse(
-            status_code=problem.status, content=serialise_problem(problem)
-        )
+        return JSONResponse(status_code=problem.status, content=serialise_problem(problem))
 
 
 _TITLES: dict[int, str] = {
@@ -190,9 +186,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = resolved
+    init_telemetry(app, resolved)
 
-    # Added first, so CORS ends up outermost and error responses still carry the
-    # headers a browser needs in order to read them.
+    # Middleware registration:
+    # Innermost to outermost on incoming requests:
+    # 1. RateLimitMiddleware checks request quotas
+    # 2. SecurityHeadersMiddleware injects OWASP headers & strips server fingerprinting
+    # 3. RequestContextMiddleware assigns request_id / correlation_id
+    # 4. CORSMiddleware applies CORS headers to all responses
+    app.add_middleware(RateLimitMiddleware, requests_per_minute=60, window_seconds=60.0)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(
         CORSMiddleware,

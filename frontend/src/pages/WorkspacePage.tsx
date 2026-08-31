@@ -1,11 +1,14 @@
-import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Node, NodeMouseHandler } from "@xyflow/react";
 
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { ResizableSplitter } from "@/components/common/ResizableSplitter";
 import { ChatPanel } from "@/features/conversation";
 import { StoryGuide } from "@/features/demo";
 import { ExplainabilityPanel } from "@/features/explainability";
 import { HistorySidebar } from "@/features/history";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useStoryOrchestration } from "@/hooks/use-story-orchestration";
 import {
   ASSERTION_NODE_ID,
@@ -211,9 +214,14 @@ export function WorkspacePage() {
       setStoryModeEnabled(false);
       stopJudgeMode();
       setStoryStep(null);
+      useUIStore.getState().setInspectorOpen(true);
       void (async () => {
         const conversationId = await ensureActiveConversation();
-        if (conversationId) setConversationMode(conversationId, runMode);
+        if (conversationId) {
+          setConversationMode(conversationId, runMode);
+          const shortTitle = text.slice(0, 48) + (text.length > 48 ? "…" : "");
+          useConversationStore.getState().updateConversationTitle(conversationId, shortTitle);
+        }
         sendMessage(text, { conversationId });
       })();
     },
@@ -256,55 +264,68 @@ export function WorkspacePage() {
 
   const sidebarCollapsed = useUIStore((state) => state.sidebarCollapsed);
   const inspectorOpen = useUIStore((state) => state.inspectorOpen);
+  const setInspectorOpen = useUIStore((state) => state.setInspectorOpen);
+
+  const isMobile = useMediaQuery("(max-width: 1023px)");
 
   const sourcesEmptyHint =
     phase === "finished" &&
-    (runMode === "balanced" || runMode === "deep_research") &&
+    runMode === "deep_research" &&
     retrievedSources.length === 0;
 
+  const [cockpitWidth, setCockpitWidth] = useState(520);
+  const [isCockpitMaximized, setIsCockpitMaximized] = useState(false);
+
   const explainability = (
-    <ExplainabilityPanel
-      className="size-full"
-      isStreaming={isStreaming}
-      runMode={runMode}
-      stageEvents={stageEvents}
-      nodes={displayGraph.nodes}
-      edges={displayGraph.edges}
-      showingStructure={showingStructure}
-      claimFocusActive={claimFocusActive}
-      onExitClaimFocus={handleExitClaimFocus}
-      onNodeClick={onNodeClick}
-      viewKey={viewKey}
-      graphTitle={graphTitle}
-      graphDescription={graphDescription}
-      responseAnalysis={responseAnalysis}
-      claimMetrics={claimMetrics}
-      retrievedSources={retrievedSources}
-      sourcesEmptyHint={sourcesEmptyHint}
-      missingContext={missingContext}
-      counterPerspective={counterPerspective}
-      selectedNodeId={selectedNodeId}
-    />
+    <ErrorBoundary fallbackType="panel" title="Explainability Cockpit Error">
+      <ExplainabilityPanel
+        className="size-full"
+        isStreaming={isStreaming}
+        runMode={runMode}
+        stageEvents={stageEvents}
+        nodes={displayGraph.nodes}
+        edges={displayGraph.edges}
+        showingStructure={showingStructure}
+        claimFocusActive={claimFocusActive}
+        onExitClaimFocus={handleExitClaimFocus}
+        onNodeClick={onNodeClick}
+        viewKey={viewKey}
+        graphTitle={graphTitle}
+        graphDescription={graphDescription}
+        responseAnalysis={responseAnalysis}
+        claimMetrics={claimMetrics}
+        retrievedSources={retrievedSources}
+        sourcesEmptyHint={sourcesEmptyHint}
+        missingContext={missingContext}
+        counterPerspective={counterPerspective}
+        selectedNodeId={selectedNodeId}
+        isMaximized={isCockpitMaximized}
+        onToggleMaximize={() => setIsCockpitMaximized((prev) => !prev)}
+      />
+    </ErrorBoundary>
   );
 
   const chatPanel = (
-    <ChatPanel
-      active
-      className="size-full"
-      messages={messages}
-      isStreaming={isStreaming}
-      disabled={chatDisabled}
-      error={chatError}
-      responseAnalysis={responseAnalysis}
-      runMode={runMode}
-      onRunModeChange={setRunMode}
-      sourcesLinked={sourcesRetrieved}
-      stageEvents={stageEvents}
-      onSend={handleManualSend}
-      onRetry={handleRetry}
-      onStop={stop}
-    />
+    <ErrorBoundary fallbackType="panel" title="Conversation Interface Error">
+      <ChatPanel
+        active
+        className="size-full"
+        messages={messages}
+        isStreaming={isStreaming}
+        disabled={chatDisabled}
+        error={chatError}
+        responseAnalysis={responseAnalysis}
+        runMode={runMode}
+        onRunModeChange={setRunMode}
+        sourcesLinked={sourcesRetrieved}
+        stageEvents={stageEvents}
+        onSend={handleManualSend}
+        onRetry={handleRetry}
+        onStop={stop}
+      />
+    </ErrorBoundary>
   );
+
 
   const storyGuide =
     storyModeEnabled && (judgeModeActive || storyStep !== null) ? (
@@ -320,38 +341,80 @@ export function WorkspacePage() {
     ) : null;
 
   return (
-    <div className="relative flex h-full min-h-0 w-full overflow-hidden bg-[#09090b]">
+    <div className="relative flex h-full min-h-0 w-full overflow-hidden bg-transparent">
       {/* Collapsible History Sidebar */}
-      {!sidebarCollapsed ? (
-        <motion.div
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 260, opacity: 1 }}
-          exit={{ width: 0, opacity: 0 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
-          className="h-full shrink-0 overflow-hidden"
-        >
-          <HistorySidebar className="h-full w-[260px]" />
-        </motion.div>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {!sidebarCollapsed && !isCockpitMaximized && (
+          <motion.div
+            key="history-sidebar"
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 260, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            className="h-full shrink-0 overflow-hidden"
+          >
+            <HistorySidebar className="h-full w-[260px]" />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Main Spacious Conversational Canvas (Single-Column Focus) */}
-      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        {chatPanel}
-        {storyGuide}
-      </main>
+      {/* Main Spacious Conversational Column */}
+      {!isCockpitMaximized && (
+        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          {chatPanel}
+          {storyGuide}
+        </main>
+      )}
 
-      {/* Slide-over Explainability Inspector Drawer */}
-      {inspectorOpen ? (
-        <motion.aside
-          initial={{ x: "100%", opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: "100%", opacity: 0 }}
-          transition={{ type: "spring", damping: 30, stiffness: 300 }}
-          className="relative z-20 h-full w-[440px] shrink-0 xl:w-[500px] 2xl:w-[560px]"
-        >
-          {explainability}
-        </motion.aside>
-      ) : null}
+      {/* Resizable Splitter between Chat and Cockpit (Desktop only) */}
+      {!isMobile && inspectorOpen && !isCockpitMaximized && (
+        <ResizableSplitter
+          onResize={(newWidth) => setCockpitWidth(newWidth)}
+          minWidth={360}
+          maxWidth={Math.round(window.innerWidth * 0.75)}
+        />
+      )}
+
+      {/* Slide-over Explainability Cockpit (Desktop) / Adaptive Drawer (Mobile) */}
+      <AnimatePresence initial={false}>
+        {inspectorOpen && (
+          isMobile ? (
+            <motion.div
+              key="explainability-mobile-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 flex flex-col justify-end bg-black/60 backdrop-blur-sm"
+              onClick={() => setInspectorOpen(false)}
+            >
+              <motion.aside
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 32, stiffness: 320 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative z-50 flex h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl border-t border-white/[0.1] bg-[#070b16]/95 shadow-2xl backdrop-blur-2xl"
+              >
+                <div className="mx-auto my-2 h-1 w-12 rounded-full bg-white/20" />
+                {explainability}
+              </motion.aside>
+            </motion.div>
+          ) : (
+            <motion.aside
+              key="explainability-desktop-panel"
+              initial={{ x: "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              style={{ width: isCockpitMaximized ? "100%" : cockpitWidth }}
+              className="relative z-20 h-full shrink-0"
+            >
+              {explainability}
+            </motion.aside>
+          )
+        )}
+      </AnimatePresence>
     </div>
   );
 }

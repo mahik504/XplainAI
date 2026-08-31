@@ -12,16 +12,18 @@ Nothing outside this module should depend on the in-memory class directly.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
-from datetime import datetime
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 import structlog
 from pydantic import Field
 
 from neural_navigator.schemas.base import BaseSchema, generate_id, utc_now
 from neural_navigator.utils.constants import EVENT_QUEUE_MAX_SIZE, EventType
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterable
+    from datetime import datetime
 
 _logger = structlog.stdlib.get_logger(__name__)
 
@@ -67,6 +69,15 @@ class EventBus(Protocol):
 
     async def publish(self, event: Event) -> None: ...
 
+    async def emit(
+        self,
+        event_type: EventType,
+        *,
+        payload: dict[str, Any] | None = None,
+        topic: str | None = None,
+        correlation_id: str | None = None,
+    ) -> Event: ...
+
     def subscribe(self, *topics: str) -> Any:
         """Async context manager yielding an ``AsyncIterator[Event]``."""
         ...
@@ -75,7 +86,7 @@ class EventBus(Protocol):
 
 
 class _Subscription:
-    __slots__ = ("queue", "topics", "dropped")
+    __slots__ = ("dropped", "queue", "topics")
 
     def __init__(self, topics: frozenset[str], max_queue_size: int) -> None:
         self.topics = topics
@@ -144,9 +155,7 @@ class InMemoryEventBus:
         correlation_id: str | None = None,
     ) -> Event:
         """Build and publish in one step. Returns the event that was published."""
-        event = build_event(
-            event_type, payload=payload, topic=topic, correlation_id=correlation_id
-        )
+        event = build_event(event_type, payload=payload, topic=topic, correlation_id=correlation_id)
         await self.publish(event)
         return event
 

@@ -1,24 +1,29 @@
-"""Hardened Tool Registry with Schema Validation, Untrusted Content Sanitization, and Multi-Source Research Tools.
+"""Hardened Tool Registry with Schema Validation and Multi-Source Research Tools.
 
-All retrieved external content is treated as untrusted data inputs and sanitized before entering the context.
+All retrieved external content is treated as untrusted data inputs and sanitized.
 """
 
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import re
+import socket
 import time
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
-from typing import Any
+import urllib.parse
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote, quote_plus
 
 import httpx
 import structlog
 
-from neural_navigator.core.config import Settings
-from neural_navigator.domain.models.research import Source, SourceType, generate_id
 from neural_navigator.orchestration.tools import ToolResult, _safe_eval_arith
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from neural_navigator.core.config import Settings
 
 _logger = structlog.get_logger("neural_navigator.orchestration.tool_registry")
 
@@ -28,12 +33,47 @@ _PROMPT_INJECTION_RE = re.compile(
 )
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
+_BLOCKED_HOSTNAMES: frozenset[str] = frozenset({
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",  # noqa: S104
+    "::1",
+    "instance-data",
+    "metadata.google.internal",
+    "metadata",
+    "169.254.169.254",
+    "169.254.170.2",
+})
 
-import ipaddress
-import urllib.parse
+_PRIVATE_SUBNETS: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = [
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("100.64.0.0/10"),
+    ipaddress.ip_network("0.0.0.0/8"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+    ipaddress.ip_network("::1/128"),
+]
+
+
+def _is_disallowed_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    if (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    ):
+        return True
+    return any(ip in subnet for subnet in _PRIVATE_SUBNETS)
+
 
 def is_safe_external_url(url: str) -> bool:
-    """Verifies that an outbound URL does not target localhost, private subnets, or metadata endpoints."""
+    """Verifies that an outbound URL does not target localhost, private subnets, or metadata."""
     try:
         parsed = urllib.parse.urlparse(url)
         if parsed.scheme not in ("http", "https"):
@@ -41,14 +81,33 @@ def is_safe_external_url(url: str) -> bool:
         hostname = parsed.hostname
         if not hostname:
             return False
-        if hostname.lower() in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "instance-data"):
+        hostname_clean = hostname.strip().lower()
+        if not hostname_clean or hostname_clean in _BLOCKED_HOSTNAMES:
             return False
+        if hostname_clean.endswith((".localhost", ".local", ".internal", ".lan")):
+            return False
+
+        # Direct IP check
         try:
-            ip = ipaddress.ip_address(hostname)
-            if ip.is_private or ip.is_loopback or ip.is_link_local:
-                return False
+            ip = ipaddress.ip_address(hostname_clean)
+            return not _is_disallowed_ip(ip)
         except ValueError:
             pass
+
+        # DNS re-resolution check to prevent DNS rebinding attacks
+        try:
+            addr_info = socket.getaddrinfo(hostname_clean, None, proto=socket.IPPROTO_TCP)
+            if not addr_info:
+                return False
+            for entry in addr_info:
+                sockaddr = entry[4]
+                ip_str = str(sockaddr[0])
+                resolved_ip = ipaddress.ip_address(ip_str)
+                if _is_disallowed_ip(resolved_ip):
+                    return False
+        except (TimeoutError, socket.gaierror, OSError):
+            return False
+
         return True
     except Exception:
         return False
@@ -144,8 +203,14 @@ class ToolRegistry:
         self.register(
             ToolDefinition(
                 name="web_search",
-                description="Performs multi-source research using Wikipedia, open web, and scientific databases.",
-                parameters_schema={"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+                description=(
+                    "Performs multi-source research using Wikipedia, open web, and databases."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                    "required": ["query"],
+                },
                 handler=self._handle_web_search,
                 timeout_seconds=12.0,
             )
@@ -154,7 +219,11 @@ class ToolRegistry:
             ToolDefinition(
                 name="wikipedia",
                 description="Fetches verified encyclopedia entries and structured summaries.",
-                parameters_schema={"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+                parameters_schema={
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                    "required": ["query"],
+                },
                 handler=self._handle_wikipedia,
                 timeout_seconds=8.0,
             )
@@ -163,7 +232,11 @@ class ToolRegistry:
             ToolDefinition(
                 name="arxiv",
                 description="Searches ArXiv for scientific preprints and peer-reviewed abstracts.",
-                parameters_schema={"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+                parameters_schema={
+                    "type": "object",
+                    "properties": {"query": {"type": "string"}},
+                    "required": ["query"],
+                },
                 handler=self._handle_arxiv,
                 timeout_seconds=10.0,
             )
@@ -172,19 +245,48 @@ class ToolRegistry:
             ToolDefinition(
                 name="calculator",
                 description="Safely computes exact arithmetic and mathematical expressions.",
-                parameters_schema={"type": "object", "properties": {"expression": {"type": "string"}}, "required": ["expression"]},
+                parameters_schema={
+                    "type": "object",
+                    "properties": {"expression": {"type": "string"}},
+                    "required": ["expression"],
+                },
                 handler=self._handle_calculator,
                 timeout_seconds=2.0,
             )
         )
+        self.register(
+            ToolDefinition(
+                name="url_ingest",
+                description=(
+                    "Ingests and scrapes web pages, GitHub repositories, and YouTube metadata."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {"url": {"type": "string"}},
+                    "required": ["url"],
+                },
+                handler=self._handle_url_ingest,
+                timeout_seconds=10.0,
+            )
+        )
+
+    async def _handle_url_ingest(self, url: str = "") -> ToolResult:
+        from neural_navigator.orchestration.url_ingest import fetch_and_parse_url
+
+        return await fetch_and_parse_url(url)
 
     async def _handle_calculator(self, expression: str = "") -> ToolResult:
         started = time.perf_counter() * 1000
         cleaned = expression.strip()
         if not cleaned:
             return ToolResult(
-                tool="calculator", status="error", started_ms=started,
-                completed_ms=started, duration_ms=0, summary="Empty expression", data={}
+                tool="calculator",
+                status="error",
+                started_ms=started,
+                completed_ms=started,
+                duration_ms=0,
+                summary="Empty expression",
+                data={},
             )
         try:
             val = _safe_eval_arith(cleaned)
@@ -215,7 +317,9 @@ class ToolRegistry:
         cleaned = query.strip()
         url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={quote_plus(cleaned)}&format=json&utf8=1&srlimit=4"
         try:
-            async with httpx.AsyncClient(timeout=8.0, headers={"User-Agent": "XplainAI-Research/2.2"}) as client:
+            async with httpx.AsyncClient(
+                timeout=8.0, headers={"User-Agent": "XplainAI-Research/2.2"}
+            ) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 data = resp.json()
@@ -226,14 +330,20 @@ class ToolRegistry:
                 raw_snippet = str(item.get("snippet") or "")
                 snippet = sanitize_untrusted_content(raw_snippet)
                 page_id = item.get("pageid")
-                page_url = f"https://en.wikipedia.org/?curid={page_id}" if page_id else f"https://en.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
-                results.append({
-                    "title": f"Wikipedia: {title}",
-                    "snippet": snippet,
-                    "url": page_url,
-                    "domain": "en.wikipedia.org",
-                    "authority": 0.92,
-                })
+                page_url = (
+                    f"https://en.wikipedia.org/?curid={page_id}"
+                    if page_id
+                    else f"https://en.wikipedia.org/wiki/{quote(title.replace(' ', '_'))}"
+                )
+                results.append(
+                    {
+                        "title": f"Wikipedia: {title}",
+                        "snippet": snippet,
+                        "url": page_url,
+                        "domain": "en.wikipedia.org",
+                        "authority": 0.92,
+                    }
+                )
             completed = time.perf_counter() * 1000
             return ToolResult(
                 tool="wikipedia",
@@ -261,7 +371,9 @@ class ToolRegistry:
         cleaned = query.strip()
         url = f"http://export.arxiv.org/api/query?search_query=all:{quote_plus(cleaned)}&start=0&max_results=3"
         try:
-            async with httpx.AsyncClient(timeout=10.0, headers={"User-Agent": "XplainAI-Research/2.2"}) as client:
+            async with httpx.AsyncClient(
+                timeout=10.0, headers={"User-Agent": "XplainAI-Research/2.2"}
+            ) as client:
                 resp = await client.get(url)
                 resp.raise_for_status()
                 xml_text = resp.text
@@ -276,13 +388,15 @@ class ToolRegistry:
                     t = sanitize_untrusted_content(title_match.group(1).strip())
                     s = sanitize_untrusted_content(summary_match.group(1).strip(), max_chars=350)
                     u = id_match.group(1).strip() if id_match else "https://arxiv.org"
-                    results.append({
-                        "title": f"ArXiv Paper: {t}",
-                        "snippet": s,
-                        "url": u,
-                        "domain": "arxiv.org",
-                        "authority": 0.95,
-                    })
+                    results.append(
+                        {
+                            "title": f"ArXiv Paper: {t}",
+                            "snippet": s,
+                            "url": u,
+                            "domain": "arxiv.org",
+                            "authority": 0.95,
+                        }
+                    )
             completed = time.perf_counter() * 1000
             return ToolResult(
                 tool="arxiv",
@@ -309,20 +423,20 @@ class ToolRegistry:
         """Unified multi-source search querying Wikipedia + DuckDuckGo in parallel."""
         started = time.perf_counter() * 1000
         cleaned = query.strip()
-        
+
         # Parallel query across Wikipedia and DuckDuckGo
         wiki_res, ddg_res = await asyncio.gather(
             self._handle_wikipedia(cleaned),
             self._fetch_ddg_sources(cleaned, max_results=max_results),
             return_exceptions=True,
         )
-        
+
         combined_results: list[dict[str, Any]] = []
         if isinstance(wiki_res, ToolResult) and wiki_res.status == "ok":
             combined_results.extend(wiki_res.data.get("results", []))
         if isinstance(ddg_res, list):
             combined_results.extend(ddg_res)
-            
+
         # Deduplicate results by URL
         seen_urls = set()
         deduped = []
@@ -340,7 +454,7 @@ class ToolRegistry:
             completed_ms=completed,
             duration_ms=round(completed - started, 2),
             summary=f"Retrieved {len(deduped)} grounded source(s) for ?{cleaned[:50]}?",
-            data={"query": cleaned, "results": deduped[:max_results + 2]},
+            data={"query": cleaned, "results": deduped[: max_results + 2]},
         )
 
     async def _fetch_ddg_sources(self, query: str, max_results: int = 3) -> list[dict[str, Any]]:
@@ -356,13 +470,15 @@ class ToolRegistry:
             abstract_url = str(payload.get("AbstractURL") or "")
             results = []
             if abstract and abstract_url:
-                results.append({
-                    "title": heading,
-                    "snippet": abstract,
-                    "url": abstract_url,
-                    "domain": "duckduckgo.com",
-                    "authority": 0.8,
-                })
+                results.append(
+                    {
+                        "title": heading,
+                        "snippet": abstract,
+                        "url": abstract_url,
+                        "domain": "duckduckgo.com",
+                        "authority": 0.8,
+                    }
+                )
             return results
         except Exception:
             return []

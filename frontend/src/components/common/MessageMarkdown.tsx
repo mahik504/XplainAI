@@ -2,6 +2,7 @@ import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { cn } from "@/lib/utils";
 
 const blockComponents: Components = {
@@ -104,9 +105,15 @@ export function MessageMarkdown({ content, className, inline = false }: MessageM
 
   return (
     <Wrapper className={cn(inline ? "inline" : "nn-md", className)}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={inline ? inlineComponents : blockComponents}>
-        {content}
-      </ReactMarkdown>
+      <ErrorBoundary
+        fallbackType="inline"
+        fallback={<span className="font-mono text-xs whitespace-pre-wrap">{content}</span>}
+      >
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={inline ? inlineComponents : blockComponents}>
+          {content}
+        </ReactMarkdown>
+      </ErrorBoundary>
     </Wrapper>
   );
 }
+

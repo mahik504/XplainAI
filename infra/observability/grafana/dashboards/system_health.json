@@ -1,0 +1,102 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "API & Transport Health",
+      "type": "row"
+    },
+    {
+      "title": "HTTP Request Rate (QPS)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(xplainai_http_requests_total[1m]))",
+          "legendFormat": "HTTP {{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "HTTP Request Latency (p50, p95, p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(xplainai_http_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(xplainai_http_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(xplainai_http_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "title": "Active WebSocket Connections",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 9 },
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "xplainai_ws_active_connections",
+          "legendFormat": "Active Connections",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "WebSocket Message Throughput",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 18, "x": 6, "y": 9 },
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (direction) (rate(xplainai_ws_messages_total[1m]))",
+          "legendFormat": "{{direction}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["xplainai", "system", "health"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "title": "XplainAI — System Health & Transports",
+  "uid": "xplainai-system-health",
+  "version": 1
+}

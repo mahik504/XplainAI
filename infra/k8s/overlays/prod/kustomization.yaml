@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: xplainai-prod
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: Deployment
+      name: xplainai-api
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: Deployment
+      name: xplainai-web
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: Ingress
+      name: xplainai-ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: app.xplainai.com
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: app.xplainai.com
+
+configMapGenerator:
+  - name: xplainai-config
+    behavior: merge
+    literals:
+      - APP_ENV=production
+      - LOG_LEVEL=INFO
+      - API_CORS_ORIGINS=https://xplainai.com,https://app.xplainai.com

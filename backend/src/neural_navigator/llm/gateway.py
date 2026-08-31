@@ -7,25 +7,21 @@ Adapters handle vendor-specific request/response framing and streaming.
 
 from __future__ import annotations
 
-import asyncio
-from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Protocol
+from typing import TYPE_CHECKING
 
 import structlog
 
-from neural_navigator.core.config import Settings
-from neural_navigator.schemas.base import ChatMessage, Usage
-from neural_navigator.services.llm import (
-    EchoProvider,
-    LLMChunk,
-    LLMCompletion,
-    LLMError,
-    LLMProvider,
-    OpenAICompatibleProvider,
-)
-from neural_navigator.utils.constants import FinishReason, LLMProviderName, Role
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Sequence
+
+    from neural_navigator.core.config import Settings
+    from neural_navigator.schemas.base import ChatMessage
+    from neural_navigator.services.llm import (
+        LLMChunk,
+        LLMProvider,
+    )
 
 _logger = structlog.stdlib.get_logger(__name__)
 

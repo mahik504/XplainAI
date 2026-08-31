@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     custom_llm_base_url: str | None = None
     custom_llm_api_key: SecretStr | None = None
     custom_chat_model: str | None = None
-    default_chat_model: str = "gpt-4.1-mini"
+    default_chat_model: str = "gpt-4o-mini"
     llm_request_timeout_seconds: float = Field(default=60.0, gt=0)
     llm_max_retries: int = Field(default=2, ge=0, le=5)
     llm_temperature: float = Field(default=0.2, ge=0.0, le=2.0)
@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     agent_max_steps: int = Field(default=32, ge=1)
     agent_step_timeout_seconds: float = Field(default=120.0, gt=0)
     conversation_db_path: str = ".data/conversations.db"
-    default_run_mode: str = "balanced"
+    default_run_mode: str = "deep_research"
 
     # Optional research tool keys (never hardcode; unset = tool skipped)
     newsdata_api_key: SecretStr | None = None

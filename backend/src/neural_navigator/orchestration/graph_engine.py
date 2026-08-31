@@ -8,11 +8,9 @@ from __future__ import annotations
 
 import math
 import re
-from typing import Any
 
 from neural_navigator.domain.models.research import (
     Assumption,
-    Citation,
     Claim,
     ClaimStatus,
     Contradiction,
@@ -23,7 +21,6 @@ from neural_navigator.domain.models.research import (
     GraphNode,
     GraphNodeType,
     Source,
-    SourceType,
     generate_id,
 )
 
@@ -54,12 +51,15 @@ def extract_claims_from_text(text: str, evidence_list: list[Evidence]) -> list[C
                 matched_evidence_ids.append(ev.id)
 
         status = ClaimStatus.SUPPORTED if matched_evidence_ids else ClaimStatus.UNVERIFIED
-        
+
         # Assess importance
         importance = "medium"
         if index == 0 or index == len(raw_sentences) - 1:
             importance = "core"
-        elif any(k in lowered_sentence for k in ("crucial", "fundamental", "specifically", "therefore", "proves")):
+        elif any(
+            k in lowered_sentence
+            for k in ("crucial", "fundamental", "specifically", "therefore", "proves")
+        ):
             importance = "high"
 
         claims.append(
@@ -161,7 +161,11 @@ def build_evidence_graph(
                 type=GraphNodeType.CLAIM,
                 label=f"Claim {idx + 1}: {clm.text[:24]}...",
                 description=clm.text,
-                metadata={"status": clm.status.value, "importance": clm.importance, "confidence": clm.confidence},
+                metadata={
+                    "status": clm.status.value,
+                    "importance": clm.importance,
+                    "confidence": clm.confidence,
+                },
                 position_3d=(x, y, z),
                 status=clm.status.value,
                 cluster="claims",

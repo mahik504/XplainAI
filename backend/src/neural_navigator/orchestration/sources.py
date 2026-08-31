@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from neural_navigator.orchestration.tools import ToolResult
+if TYPE_CHECKING:
+    from neural_navigator.orchestration.tools import ToolResult
 
 
 @dataclass(slots=True)

@@ -1,0 +1,105 @@
+name: Security & Vulnerability Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run every Monday at 04:00 UTC
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  gitleaks:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ""
+
+  trivy:
+    name: Vulnerability Scan (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          format: "table"
+          severity: "CRITICAL,HIGH"
+
+  python-sast:
+    name: Python SAST (Bandit & Ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+          uv pip install bandit[toml]
+
+      - name: Run Bandit Security Analysis
+        run: |
+          uv run bandit -r src/ -c pyproject.toml --severity-level medium
+
+      - name: Run Ruff Security Rules
+        run: |
+          uv run ruff check src/ --select S
+
+  dependency-audit:
+    name: Dependency Vulnerability Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js & pnpm
+        uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Audit Node.js Dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm audit --audit-level=high
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Audit Python Dependencies
+        working-directory: backend
+        run: |
+          uv sync --all-extras
+          uv pip install pip-audit
+          uv run pip-audit --desc on

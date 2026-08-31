@@ -1,0 +1,144 @@
+# Production Docker Compose Override for XplainAI
+# Usage: docker compose -f docker-compose.yml -f infra/docker/docker-compose.prod.yml up -d
+
+services:
+  postgres:
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-navigator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      POSTGRES_DB: ${POSTGRES_DB:-navigator}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  redis:
+    restart: always
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-}"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.2"
+          memory: 256M
+
+  otel-collector:
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.2"
+          memory: 128M
+
+  api:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+      target: production
+    restart: always
+    environment:
+      APP_ENV: production
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO
+      OTEL_SERVICE_NAME: xplainai-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    volumes: []  # No host source volume mounts in production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health/live').status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  worker:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+      target: production
+    restart: always
+    command: ["uv", "run", "arq", "neural_navigator.workers.settings.WorkerSettings"]
+    environment:
+      APP_ENV: production
+      LOG_FORMAT: json
+      LOG_LEVEL: INFO
+    volumes: []  # No host source volume mounts in production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  web:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+      target: production
+    restart: always
+    ports:
+      - "${PORT:-80}:80"
+    volumes: []  # No host source volume mounts in production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.2"
+          memory: 128M

@@ -29,7 +29,7 @@ export function DemoLanding({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-      className="pointer-events-auto absolute inset-x-4 bottom-[7.5rem] z-40 mx-auto max-w-2xl rounded-2xl border border-border/60 bg-background/90 p-4 shadow-[0_16px_48px_-28px_oklch(0_0_0_/_70%)] backdrop-blur-xl sm:inset-x-auto sm:left-1/2 sm:w-[min(36rem,calc(100%-2rem))] sm:-translate-x-1/2"
+      className="pointer-events-auto absolute inset-x-4 bottom-[7.5rem] z-40 mx-auto max-w-2xl rounded-2xl border border-border/60 bg-[#070b16]/40 p-4 shadow-[0_16px_48px_-28px_oklch(0_0_0_/_70%)] backdrop-blur-2xl sm:inset-x-auto sm:left-1/2 sm:w-[min(36rem,calc(100%-2rem))] sm:-translate-x-1/2"
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>

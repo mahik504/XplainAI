@@ -40,4 +40,5 @@ backend/.data/
 # Local capture scratch (keep docs/screenshots and docs/demo tracked assets)
 *.mov
 .cache/
+.brain/
 backend/scripts/_ship_qa_last.json

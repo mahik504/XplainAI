@@ -6,11 +6,11 @@ contradictions, and topology) without fabricating hidden chain-of-thought.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
-import uuid
 
 
 def utc_now() -> datetime:
@@ -25,6 +25,7 @@ class SourceType(StrEnum):
     WEB = "web"
     PAPER = "paper"
     DOCUMENT = "document"
+    DOCUMENTATION = "documentation"
     TOOL = "tool"
     SYSTEM = "system"
 
@@ -310,10 +311,14 @@ class ResearchRun:
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "trust_metrics": {
                 "total_claims": len(self.claims),
-                "supported_claims": sum(1 for c in self.claims if c.status == ClaimStatus.SUPPORTED),
-                "unverified_claims": sum(1 for c in self.claims if c.status == ClaimStatus.UNVERIFIED),
+                "supported_claims": sum(
+                    1 for c in self.claims if c.status == ClaimStatus.SUPPORTED
+                ),
+                "unverified_claims": sum(
+                    1 for c in self.claims if c.status == ClaimStatus.UNVERIFIED
+                ),
                 "contradictions_found": len(self.contradictions),
                 "total_sources": len(self.sources),
                 "total_evidence": len(self.evidence),
-            }
+            },
         }

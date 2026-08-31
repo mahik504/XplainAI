@@ -30,7 +30,7 @@ _REGISTRY: tuple[ChatModelInfo, ...] = (
     ChatModelInfo(
         id="gpt-4o",
         label="GPT-4o",
-        description="Flagship multimodal intelligence",
+        description="Flagship multimodal intelligence & reasoning",
         tier="general",
         provider="openai",
     ),
@@ -42,16 +42,9 @@ _REGISTRY: tuple[ChatModelInfo, ...] = (
         provider="openai",
     ),
     ChatModelInfo(
-        id="gpt-4.1-mini",
-        label="GPT-4.1 mini",
-        description="Fast synthesis & search",
-        tier="fast",
-        provider="openai",
-    ),
-    ChatModelInfo(
-        id="gpt-4.1",
-        label="GPT-4.1",
-        description="Deep academic reasoning",
+        id="o3-mini",
+        label="o3-mini",
+        description="STEM & competitive reasoning",
         tier="advanced",
         provider="openai",
     ),
@@ -59,31 +52,46 @@ _REGISTRY: tuple[ChatModelInfo, ...] = (
     ChatModelInfo(
         id="claude-3-7-sonnet",
         label="Claude 3.7 Sonnet",
-        description="Hybrid reasoning & code synthesis",
+        description="Hybrid reasoning & dialectic synthesis",
+        tier="advanced",
+        provider="anthropic",
+    ),
+    ChatModelInfo(
+        id="claude-3-5-sonnet",
+        label="Claude 3.5 Sonnet",
+        description="State-of-the-art research analysis",
         tier="advanced",
         provider="anthropic",
     ),
     ChatModelInfo(
         id="claude-3-5-haiku",
         label="Claude 3.5 Haiku",
-        description="Ultra-fast responsive research",
+        description="Ultra-fast responsive retrieval",
         tier="fast",
         provider="anthropic",
     ),
     # Google
     ChatModelInfo(
-        id="gemini-2.5-pro",
-        label="Gemini 2.5 Pro",
-        description="Deep multimodal reasoning & math",
-        tier="advanced",
+        id="gemini-2.0-flash",
+        label="Gemini 2.0 Flash",
+        description="High-throughput multimodal speed",
+        tier="fast",
         provider="google",
     ),
     ChatModelInfo(
-        id="gemini-2.5-flash",
-        label="Gemini 2.5 Flash",
-        description="High-throughput frontier speed",
-        tier="fast",
+        id="gemini-1.5-pro",
+        label="Gemini 1.5 Pro",
+        description="Long-context research reasoning",
+        tier="advanced",
         provider="google",
+    ),
+    # DeepSeek
+    ChatModelInfo(
+        id="deepseek-reasoner",
+        label="DeepSeek R1",
+        description="Open-weight mathematical reasoning",
+        tier="advanced",
+        provider="custom",
     ),
 )
 
@@ -119,4 +127,3 @@ def resolve_allowed_model(requested: str | None, *, default_model: str) -> str:
     if requested and is_allowed_model(requested, default_model=default_model):
         return requested.strip()
     return default_model
-

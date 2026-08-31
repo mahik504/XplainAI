@@ -1,0 +1,111 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "LLM Inference & Token Consumption",
+      "type": "row"
+    },
+    {
+      "title": "Token Throughput (Tokens/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (usage_type) (rate(xplainai_llm_tokens_total[1m]))",
+          "legendFormat": "{{usage_type}} tokens/s",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "LLM Request Latency (p50, p95 by model)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, model) (rate(xplainai_llm_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "p50 {{model}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, model) (rate(xplainai_llm_request_duration_seconds_bucket[1m])))",
+          "legendFormat": "p95 {{model}}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "title": "Total Tokens Consumed",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 9 },
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum(xplainai_llm_tokens_total)",
+          "legendFormat": "Total Tokens",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Tokens by Provider & Model",
+      "type": "piechart",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 9 },
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (model) (xplainai_llm_tokens_total)",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Prompt vs Completion Ratio",
+      "type": "piechart",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 9 },
+      "id": 6,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (usage_type) (xplainai_llm_tokens_total)",
+          "legendFormat": "{{usage_type}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["xplainai", "llm", "tokens"],
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "title": "XplainAI — LLM Performance & Costs",
+  "uid": "xplainai-llm-performance",
+  "version": 1
+}

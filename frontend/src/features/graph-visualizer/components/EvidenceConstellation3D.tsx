@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Cpu, RefreshCw, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hudAudio } from "@/features/audio/audio-sfx";
 import { cn } from "@/lib/utils";
+import { useUIStore } from "@/stores/ui-store";
 
 export interface Graph3DNode {
   id: string;
@@ -26,11 +27,13 @@ export interface Graph3DEdge {
   label?: string;
 }
 
-interface EvidenceConstellation3DProps {
+export interface EvidenceConstellation3DProps {
   nodes: Graph3DNode[];
   edges: Graph3DEdge[];
   activeNodeId?: string | null;
   onNodeClick?: (node: Graph3DNode) => void;
+  onContextLost?: () => void;
+  onSwitchTo2D?: () => void;
   className?: string;
 }
 
@@ -43,11 +46,53 @@ const TYPE_PALETTE: Record<string, { hex: number; css: string; label: string }> 
   conclusion: { hex: 0xc084fc, css: "#C084FC", label: "Synthesis Conclusion" },
 };
 
+/** Recursive disposal of Three.js materials, textures, and buffer geometries */
+function disposeMaterial(mat: THREE.Material): void {
+  const m = mat as unknown as Record<string, unknown>;
+  const textureKeys = [
+    "map",
+    "lightMap",
+    "bumpMap",
+    "normalMap",
+    "specularMap",
+    "envMap",
+    "alphaMap",
+    "roughnessMap",
+    "metalnessMap",
+    "emissiveMap",
+  ];
+  for (const key of textureKeys) {
+    const val = m[key];
+    if (val && typeof (val as THREE.Texture).dispose === "function") {
+      (val as THREE.Texture).dispose();
+    }
+  }
+  mat.dispose();
+}
+
+function disposeHierarchy(node: THREE.Object3D): void {
+  node.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (mesh.geometry) {
+      mesh.geometry.dispose();
+    }
+    if (mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((mat) => disposeMaterial(mat));
+      } else {
+        disposeMaterial(mesh.material);
+      }
+    }
+  });
+}
+
 export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = ({
   nodes,
   edges,
   activeNodeId,
   onNodeClick,
+  onContextLost,
+  onSwitchTo2D,
   className,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,6 +104,8 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
   const hoveredNodeRef = useRef<Graph3DNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<Graph3DNode | null>(null);
   const [hudPos, setHudPos] = useState<{ x: number; y: number } | null>(null);
+  const [contextLost, setContextLost] = useState<boolean>(false);
+  const [renderNonce, setRenderNonce] = useState<number>(0);
 
   const resetCamera = useCallback(() => {
     hudAudio.playClick(900);
@@ -69,11 +116,27 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     }
   }, []);
 
+  // Smooth focus lerp when activeNodeId changes
+  useEffect(() => {
+    if (!activeNodeId || !nodeMeshesRef.current.has(activeNodeId) || !controlsRef.current || !cameraRef.current) {
+      return;
+    }
+    const mesh = nodeMeshesRef.current.get(activeNodeId);
+    if (mesh) {
+      const targetPos = mesh.position;
+      controlsRef.current.target.lerp(targetPos, 0.4);
+      controlsRef.current.update();
+    }
+  }, [activeNodeId]);
+
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
     const width = container.clientWidth || 600;
     const height = container.clientHeight || 400;
+
+    // Reset context lost state on new mount / nonce bump
+    setContextLost(false);
 
     // 1. Scene & Deep Space Fog
     const scene = new THREE.Scene();
@@ -85,12 +148,40 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
     cameraRef.current = camera;
 
     // 2. High-Performance WebGL Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: "high-performance",
+      });
+    } catch {
+      setContextLost(true);
+      onContextLost?.();
+      return;
+    }
+
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setClearColor(0x030712, 1);
     container.replaceChildren(renderer.domElement);
     rendererRef.current = renderer;
+
+    // WebGL Context Lost & Restored Handlers
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      setContextLost(true);
+      onContextLost?.();
+    };
+
+    const handleContextRestored = () => {
+      setContextLost(false);
+      setRenderNonce((n) => n + 1);
+    };
+
+    const canvas = renderer.domElement;
+    canvas.addEventListener("webglcontextlost", handleContextLost, false);
+    canvas.addEventListener("webglcontextrestored", handleContextRestored, false);
 
     // 3. Smooth Damped Orbit Controls
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -336,18 +427,24 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       animId = requestAnimationFrame(animate);
       controls.update();
 
-      // Rotate Concentric Holographic Rings
-      innerRing.rotation.z += 0.006;
-      midRing.rotation.z -= 0.004;
-      outerRing.rotation.z += 0.002;
-      starField.rotation.y += 0.0003;
+      const prefersReduced =
+        typeof window !== "undefined" &&
+        Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+      const isMotionActive = useUIStore.getState().ambientMotion && !prefersReduced;
+      if (isMotionActive) {
+        // Rotate Concentric Holographic Rings
+        innerRing.rotation.z += 0.006;
+        midRing.rotation.z -= 0.004;
+        outerRing.rotation.z += 0.002;
+        starField.rotation.y += 0.0003;
 
-      // Update travelling light pulses along laser conduits
-      pulseObjects.forEach((p) => {
-        p.progress = (p.progress + 0.007) % 1.0;
-        const pos = p.curve.getPoint(p.progress);
-        p.particle.position.copy(pos);
-      });
+        // Update travelling light pulses along laser conduits
+        pulseObjects.forEach((p) => {
+          p.progress = (p.progress + 0.007) % 1.0;
+          const pos = p.curve.getPoint(p.progress);
+          p.particle.position.copy(pos);
+        });
+      }
 
       renderer.render(scene, camera);
     };
@@ -358,9 +455,68 @@ export const EvidenceConstellation3D: React.FC<EvidenceConstellation3DProps> = (
       resizeObserver.disconnect();
       container.removeEventListener("pointermove", handlePointerMove);
       container.removeEventListener("click", handleClick);
+      canvas.removeEventListener("webglcontextlost", handleContextLost);
+      canvas.removeEventListener("webglcontextrestored", handleContextRestored);
+
+      // Complete recursive resource disposal
+      disposeHierarchy(scene);
       renderer.dispose();
+      nodeMeshesRef.current.clear();
+      sceneRef.current = null;
+      cameraRef.current = null;
+      controlsRef.current = null;
+      rendererRef.current = null;
     };
-  }, [nodes, edges, activeNodeId, onNodeClick]);
+  }, [nodes, edges, activeNodeId, onNodeClick, onContextLost, renderNonce]);
+
+  if (contextLost) {
+    return (
+      <div
+        role="alert"
+        className={cn(
+          "relative flex size-full min-h-[300px] flex-col items-center justify-center p-6 text-center bg-[#030712]/95 border border-cyan-500/20 rounded-xl backdrop-blur-xl",
+          className,
+        )}
+      >
+        <div className="mb-4 flex size-14 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+          <Cpu className="size-7 animate-pulse" />
+        </div>
+        <h3 className="mb-1.5 text-base font-semibold text-white font-sans">
+          WebGL Context Interrupted
+        </h3>
+        <p className="mb-6 max-w-md text-xs text-slate-400 font-mono leading-relaxed">
+          The 3D GPU graphics context was lost or reset by the operating system. You can re-initialize the 3D canvas or switch to the 2D topology view.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="default"
+            onClick={() => {
+              setContextLost(false);
+              setRenderNonce((n) => n + 1);
+            }}
+            className="gap-2 bg-cyan-500 text-black hover:bg-cyan-400 font-mono text-xs shadow-[0_0_15px_rgba(6,182,212,0.35)]"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>Retry 3D Canvas</span>
+          </Button>
+          {onSwitchTo2D ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={onSwitchTo2D}
+              className="gap-2 border-white/15 bg-white/[0.05] text-slate-200 hover:bg-white/[0.1] hover:text-white font-mono text-xs"
+            >
+              <Layers className="size-3.5 text-cyan-400" />
+              <span>Switch to 2D Flow</span>
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("relative size-full overflow-hidden select-none bg-[#030712]", className)}>

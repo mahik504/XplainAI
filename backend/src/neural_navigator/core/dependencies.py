@@ -10,11 +10,10 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, Query, WebSocket, WebSocketException, status
+from fastapi import Depends, HTTPException, Query, Request, WebSocket, WebSocketException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from pydantic import ConfigDict, Field
-from starlette.requests import HTTPConnection
 
 from neural_navigator.core.config import Settings, get_settings
 from neural_navigator.schemas.base import BaseSchema, PaginationParams
@@ -49,9 +48,9 @@ class Principal(BaseSchema):
 ANONYMOUS_PRINCIPAL = Principal(subject=ANONYMOUS_SUBJECT, is_anonymous=True)
 
 
-def _state_value(connection: HTTPConnection, key: str) -> Any:
+def _state_value(request: Request, key: str) -> Any:
     """Read a lifespan-created collaborator, failing loudly if startup was skipped."""
-    value = getattr(connection.app.state, key, None)
+    value = getattr(request.app.state, key, None)
     if value is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -60,34 +59,40 @@ def _state_value(connection: HTTPConnection, key: str) -> Any:
     return value
 
 
-def get_app_settings(connection: HTTPConnection) -> Settings:
+def get_app_settings(request: Request) -> Settings:
     """Return the settings the running application was built with.
 
     Reads ``app.state`` rather than the cached module singleton: an app constructed
     via ``create_app(settings=...)`` must actually be governed by those settings,
     otherwise security-relevant flags silently revert to the process defaults.
     """
-    settings: Settings | None = getattr(connection.app.state, "settings", None)
+    settings: Settings | None = getattr(request.app.state, "settings", None)
     return settings if settings is not None else get_settings()
 
 
-def get_llm_service(connection: HTTPConnection) -> LLMService:
-    service: LLMService = _state_value(connection, "llm_service")
+def get_ws_app_settings(websocket: WebSocket) -> Settings:
+    """Return settings for a WebSocket connection."""
+    settings: Settings | None = getattr(websocket.app.state, "settings", None)
+    return settings if settings is not None else get_settings()
+
+
+def get_llm_service(request: Request) -> LLMService:
+    service: LLMService = _state_value(request, "llm_service")
     return service
 
 
-def get_event_bus(connection: HTTPConnection) -> EventBus:
-    bus: EventBus = _state_value(connection, "event_bus")
+def get_event_bus(request: Request) -> EventBus:
+    bus: EventBus = _state_value(request, "event_bus")
     return bus
 
 
-def get_request_id(connection: HTTPConnection) -> str:
+def get_request_id(request: Request) -> str:
     """Request id assigned by ``RequestContextMiddleware``."""
-    return str(connection.scope.get("state", {}).get("request_id", ""))
+    return str(request.scope.get("state", {}).get("request_id", ""))
 
 
-def get_correlation_id(connection: HTTPConnection) -> str:
-    return str(connection.scope.get("state", {}).get("correlation_id", ""))
+def get_correlation_id(request: Request) -> str:
+    return str(request.scope.get("state", {}).get("correlation_id", ""))
 
 
 def get_pagination(
@@ -165,7 +170,7 @@ def require_authenticated(
 
 async def get_ws_principal(
     websocket: WebSocket,
-    settings: Annotated[Settings, Depends(get_app_settings)],
+    settings: Annotated[Settings, Depends(get_ws_app_settings)],
     token: Annotated[str | None, Query(description="JWT access token")] = None,
 ) -> Principal:
     """Resolve the caller for a WebSocket handshake.

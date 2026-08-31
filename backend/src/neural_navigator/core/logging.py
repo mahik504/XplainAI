@@ -12,20 +12,24 @@ import logging
 import sys
 import time
 import uuid
-from collections.abc import MutableMapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from starlette.datastructures import Headers, MutableHeaders
-from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from neural_navigator.core.config import Settings
 from neural_navigator.utils.constants import (
     HEADER_CORRELATION_ID,
     HEADER_REQUEST_ID,
     HEADER_RESPONSE_TIME,
     LogFormat,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import MutableMapping
+
+    from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+    from neural_navigator.core.config import Settings
 
 #: Loggers whose own handlers must be removed so records propagate to the root
 #: handler configured below. Without this, uvicorn double-prints every access line.
@@ -156,11 +160,16 @@ class RequestContextMiddleware:
         state["request_id"] = request_id
         state["correlation_id"] = correlation_id
 
+        from neural_navigator.core.metrics import record_http_request
+        from neural_navigator.core.telemetry import get_trace_correlation_context
+
         clear_request_context()
+        trace_ctx = get_trace_correlation_context()
         bind_request_context(
             request_id=request_id,
             correlation_id=correlation_id,
             path=scope.get("path", ""),
+            **trace_ctx,
         )
 
         if scope["type"] == "websocket":
@@ -187,21 +196,33 @@ class RequestContextMiddleware:
         try:
             await self.app(scope, receive, send_wrapper)
         except Exception:
-            elapsed_ms = (time.perf_counter() - started) * 1000
+            elapsed_s = time.perf_counter() - started
+            record_http_request(
+                method=scope.get("method", "GET"),
+                path=scope.get("path", "/"),
+                status_code=status_code,
+                duration_seconds=elapsed_s,
+            )
             self._logger.exception(
                 "http.request.failed",
                 method=scope.get("method", ""),
                 status_code=status_code,
-                duration_ms=round(elapsed_ms, 2),
+                duration_ms=round(elapsed_s * 1000, 2),
             )
             raise
         else:
-            elapsed_ms = (time.perf_counter() - started) * 1000
+            elapsed_s = time.perf_counter() - started
+            record_http_request(
+                method=scope.get("method", "GET"),
+                path=scope.get("path", "/"),
+                status_code=status_code,
+                duration_seconds=elapsed_s,
+            )
             self._logger.info(
                 "http.request",
                 method=scope.get("method", ""),
                 status_code=status_code,
-                duration_ms=round(elapsed_ms, 2),
+                duration_ms=round(elapsed_s * 1000, 2),
                 client=scope["client"][0] if scope.get("client") else None,
             )
         finally:

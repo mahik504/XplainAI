@@ -95,7 +95,7 @@ class ServerMessageType(StrEnum):
 
     CONNECTION_READY = "connection.ready"
     RUN_STARTED = "run.started"
-    RUN_TOKEN = "run.token"
+    RUN_TOKEN = "run.token"  # noqa: S105
     RUN_FINISHED = "run.finished"
     STAGE_STARTED = "stage.started"
     STAGE_COMPLETE = "stage.complete"

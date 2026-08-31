@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Annotated, Any, Generic, Literal, TypeVar
+from typing import Annotated, Any, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -100,7 +100,7 @@ class PageMeta(BaseSchema):
     has_more: bool
 
 
-class Page(BaseSchema, Generic[ItemT]):
+class Page[ItemT](BaseSchema):
     items: list[ItemT]
     meta: PageMeta
 

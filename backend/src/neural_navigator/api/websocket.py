@@ -15,23 +15,14 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import time
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 import structlog
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import Field, TypeAdapter, ValidationError
 
-from neural_navigator.core.config import Settings
-from neural_navigator.core.dependencies import (
-    EventBusDep,
-    LLMServiceDep,
-    Principal,
-    SettingsDep,
-    WSPrincipalDep,
-)
 from neural_navigator.orchestration.modes import RunMode
 from neural_navigator.orchestration.pipeline import OrchestrationResult, run_orchestrated_chat
-from neural_navigator.orchestration.stages import OrchestrationStage
 from neural_navigator.schemas.base import (
     ChatMessage,
     ConnectionReadyFrame,
@@ -49,7 +40,6 @@ from neural_navigator.schemas.base import (
     generate_id,
 )
 from neural_navigator.services.conversations import ConversationStore
-from neural_navigator.services.events import EventBus
 from neural_navigator.services.llm import LLMError, LLMService
 from neural_navigator.utils.constants import (
     ClientMessageType,
@@ -59,6 +49,18 @@ from neural_navigator.utils.constants import (
     Role,
     WSCloseCode,
 )
+
+if TYPE_CHECKING:
+    from neural_navigator.core.config import Settings
+    from neural_navigator.core.dependencies import (
+        EventBusDep,
+        LLMServiceDep,
+        Principal,
+        SettingsDep,
+        WSPrincipalDep,
+    )
+    from neural_navigator.orchestration.stages import OrchestrationStage
+    from neural_navigator.services.events import EventBus
 
 router = APIRouter()
 
@@ -80,13 +82,13 @@ class ChatSendFrame(WSClientFrame):
     max_output_tokens: int | None = Field(default=None, ge=1, le=32_000)
     mode: str | None = Field(default=None, max_length=32)
     conversation_id: str | None = Field(default=None, max_length=64)
+    custom_api_base: str | None = Field(default=None)
+    custom_api_key: str | None = Field(default=None)
 
 
 class RunCancelFrame(WSClientFrame):
     type: Literal[ClientMessageType.RUN_CANCEL] = ClientMessageType.RUN_CANCEL
-    run_id: str | None = Field(
-        default=None, description="Cancels the active run when omitted."
-    )
+    run_id: str | None = Field(default=None, description="Cancels the active run when omitted.")
 
 
 class PingFrame(WSClientFrame):
@@ -98,8 +100,8 @@ ClientFrame = Annotated[
     Field(discriminator="type"),
 ]
 
-_client_frame_adapter: TypeAdapter[ChatSendFrame | RunCancelFrame | PingFrame] = (
-    TypeAdapter(ClientFrame)
+_client_frame_adapter: TypeAdapter[ChatSendFrame | RunCancelFrame | PingFrame] = TypeAdapter(
+    ClientFrame
 )
 
 
@@ -130,10 +132,17 @@ class ConnectionRegistry:
                 return False
             self._sessions[session.connection_id] = session
             self._per_subject[session.subject] = current + 1
+            from neural_navigator.core.metrics import record_ws_connect
+
+            record_ws_connect()
             return True
 
     async def unregister(self, session: ChatSocketSession) -> None:
         async with self._lock:
+            if session.connection_id in self._sessions:
+                from neural_navigator.core.metrics import record_ws_disconnect
+
+                record_ws_disconnect()
             self._sessions.pop(session.connection_id, None)
             remaining = self._per_subject.get(session.subject, 0) - 1
             if remaining > 0:
@@ -182,9 +191,7 @@ class ChatSocketSession:
         self._run_task: asyncio.Task[None] | None = None
         self._active_run_id: str | None = None
         self._closed = False
-        self._log = _logger.bind(
-            connection_id=self.connection_id, subject=principal.subject
-        )
+        self._log = _logger.bind(connection_id=self.connection_id, subject=principal.subject)
 
     @property
     def subject(self) -> str:
@@ -268,6 +275,9 @@ class ChatSocketSession:
             await self._dispatch(frame)
 
     async def _dispatch(self, frame: ChatSendFrame | RunCancelFrame | PingFrame) -> None:
+        from neural_navigator.core.metrics import record_ws_message
+
+        record_ws_message(message_type=frame.type, direction="inbound")
         if isinstance(frame, PingFrame):
             await self._send(PongFrame())
             return
@@ -302,7 +312,21 @@ class ChatSocketSession:
     # --- Run execution -----------------------------------------------------
 
     async def _execute_run(self, run_id: str, frame: ChatSendFrame) -> None:
-        model = self._llm.resolve_model(frame.model)
+        active_llm = self._llm
+        if frame.custom_api_base:
+            from neural_navigator.services.llm import LLMService, OpenAICompatibleProvider
+            provider = OpenAICompatibleProvider(
+                base_url=frame.custom_api_base,
+                api_key=frame.custom_api_key or "dummy",
+                timeout_seconds=self._settings.llm_timeout_seconds,
+            )
+            active_llm = LLMService(
+                provider=provider,
+                settings=self._settings,
+                idle_timeout_seconds=self._settings.llm_stream_idle_timeout_seconds
+            )
+
+        model = active_llm.resolve_model(frame.model)
         finish_reason = FinishReason.STOP
         usage: Usage | None = None
         mode = RunMode.parse(frame.mode or self._settings.default_run_mode)
@@ -337,9 +361,7 @@ class ChatSocketSession:
             now = time.perf_counter()
             started_ms = round(now * 1000)
             payload = {**(detail or {}), "started_at_ms": started_ms}
-            await self._send(
-                StageStartedFrame(run_id=run_id, stage=stage.value, detail=payload)
-            )
+            await self._send(StageStartedFrame(run_id=run_id, stage=stage.value, detail=payload))
 
             open_key = stage_pairs.get(stage.value)
             if open_key and open_key in stage_open_at:
@@ -368,9 +390,7 @@ class ChatSocketSession:
                 }
             )
             await self._send(
-                StageCompleteFrame(
-                    run_id=run_id, stage=stage.value, result=complete_payload
-                )
+                StageCompleteFrame(run_id=run_id, stage=stage.value, result=complete_payload)
             )
 
         try:
@@ -379,7 +399,11 @@ class ChatSocketSession:
             # Persist the latest user turn when a conversation is attached.
             if self._conversations is not None and frame.conversation_id:
                 latest_user = next(
-                    (message.content for message in reversed(frame.messages) if message.role is Role.USER),
+                    (
+                        message.content
+                        for message in reversed(frame.messages)
+                        if message.role is Role.USER
+                    ),
                     None,
                 )
                 if latest_user:
@@ -399,7 +423,7 @@ class ChatSocketSession:
             async for item in run_orchestrated_chat(
                 messages=frame.messages,
                 mode=mode,
-                llm=self._llm,
+                llm=active_llm,
                 settings=self._settings,
                 emit_stage=emit_stage,
                 model=frame.model,
@@ -441,9 +465,7 @@ class ChatSocketSession:
                 }
                 else exc.message
             )
-            await self._send(
-                ErrorFrame(code=exc.code, message=human, run_id=run_id)
-            )
+            await self._send(ErrorFrame(code=exc.code, message=human, run_id=run_id))
             await self._send(
                 RunFinishedFrame(
                     run_id=run_id,
@@ -454,11 +476,7 @@ class ChatSocketSession:
             return
         else:
             assistant_text = "".join(assistant_parts).strip()
-            if (
-                self._conversations is not None
-                and frame.conversation_id
-                and assistant_text
-            ):
+            if self._conversations is not None and frame.conversation_id and assistant_text:
                 with contextlib.suppress(KeyError):
                     self._conversations.append_message(
                         frame.conversation_id,
@@ -486,6 +504,9 @@ class ChatSocketSession:
                 },
             )
         finally:
+            if active_llm is not self._llm:
+                with contextlib.suppress(Exception):
+                    await active_llm.aclose()
             if self._active_run_id == run_id:
                 self._active_run_id = None
                 self._run_task = None
@@ -527,6 +548,11 @@ class ChatSocketSession:
         async with self._send_lock:
             self._seq += 1
             frame.seq = self._seq
+            from neural_navigator.core.metrics import record_ws_message
+
+            record_ws_message(
+                message_type=getattr(frame, "type", "server_frame"), direction="outbound"
+            )
             await self._websocket.send_text(frame.model_dump_json(exclude_none=True))
 
     async def _close(self, code: WSCloseCode, reason: str) -> None:

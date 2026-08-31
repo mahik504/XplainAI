@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+import { hudAudio } from "@/features/audio/audio-sfx";
 import type { RunPhase } from "@/lib/run-graph";
 import type { StoryStepId } from "@/lib/story-mode";
 import type { ResponseStructureCategory } from "@/lib/xai";
@@ -10,6 +11,7 @@ export type WorkspacePanel = "chat" | "graph" | "trust" | "timeline";
 export type GraphSurface = "pipeline" | "structure";
 
 const DEMO_LANDING_DISMISS_KEY = "xplainai.demoLandingDismissed";
+const SFX_MUTED_STORAGE_KEY = "xplainai_sfx_muted";
 
 function readDemoLandingDismissed(): boolean {
   try {
@@ -19,6 +21,16 @@ function readDemoLandingDismissed(): boolean {
     return false;
   }
 }
+
+function readSoundMuted(): boolean {
+  try {
+    if (typeof globalThis.localStorage === "undefined") return false;
+    return globalThis.localStorage.getItem(SFX_MUTED_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 
 interface FocusSnapshot {
   assertionId: string;
@@ -55,6 +67,9 @@ interface UIState {
   inspectorOpen: boolean;
   voiceModalOpen: boolean;
   visionModalOpen: boolean;
+  commandPaletteOpen: boolean;
+  shortcutsModalOpen: boolean;
+  soundMuted: boolean;
   saveHistoryEnabled: boolean;
   customApiKey: string;
   customApiBase: string;
@@ -66,6 +81,12 @@ interface UIState {
   setInspectorOpen: (open: boolean) => void;
   setVoiceModalOpen: (open: boolean) => void;
   setVisionModalOpen: (open: boolean) => void;
+  setCommandPaletteOpen: (open: boolean) => void;
+  toggleCommandPalette: () => void;
+  setShortcutsModalOpen: (open: boolean) => void;
+  toggleShortcutsModal: () => void;
+  setSoundMuted: (muted: boolean) => void;
+  toggleSoundMuted: () => void;
   setSaveHistoryEnabled: (enabled: boolean) => void;
   setCustomApiConfig: (config: { apiKey?: string; apiBase?: string; modelId?: string }) => void;
   setMobileNavOpen: (open: boolean) => void;
@@ -119,6 +140,9 @@ export const useUIStore = create<UIState>()((set) => ({
   inspectorOpen: false,
   voiceModalOpen: false,
   visionModalOpen: false,
+  commandPaletteOpen: false,
+  shortcutsModalOpen: false,
+  soundMuted: readSoundMuted(),
   saveHistoryEnabled: true,
   customApiKey: "",
   customApiBase: "",
@@ -145,9 +169,47 @@ export const useUIStore = create<UIState>()((set) => ({
   setVisionModalOpen: (open) => {
     set({ visionModalOpen: open });
   },
+  setCommandPaletteOpen: (open) => {
+    set({ commandPaletteOpen: open });
+  },
+  toggleCommandPalette: () => {
+    set((state) => ({ commandPaletteOpen: !state.commandPaletteOpen }));
+  },
+  setShortcutsModalOpen: (open) => {
+    set({ shortcutsModalOpen: open });
+  },
+  toggleShortcutsModal: () => {
+    set((state) => ({ shortcutsModalOpen: !state.shortcutsModalOpen }));
+  },
+  setSoundMuted: (muted) => {
+    try {
+      if (typeof globalThis.localStorage !== "undefined") {
+        globalThis.localStorage.setItem(SFX_MUTED_STORAGE_KEY, String(muted));
+      }
+    } catch {
+      // ignore
+    }
+    hudAudio.setMuted(muted);
+    set({ soundMuted: muted });
+  },
+  toggleSoundMuted: () => {
+    set((state) => {
+      const next = !state.soundMuted;
+      try {
+        if (typeof globalThis.localStorage !== "undefined") {
+          globalThis.localStorage.setItem(SFX_MUTED_STORAGE_KEY, String(next));
+        }
+      } catch {
+        // ignore
+      }
+      hudAudio.setMuted(next);
+      return { soundMuted: next };
+    });
+  },
   setSaveHistoryEnabled: (enabled) => {
     set({ saveHistoryEnabled: enabled });
   },
+
   setCustomApiConfig: (config) => {
     set((state) => ({
       customApiKey: config.apiKey ?? state.customApiKey,
