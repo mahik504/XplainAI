@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Docker image tag (e.g. v2.1.0)'
+        description: 'Docker image tag (e.g. v3.0.0)'
         required: true
         default: 'latest'
 
@@ -54,7 +54,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./backend/Dockerfile
+          file: ./apps/api/Dockerfile
           target: production
           platforms: linux/amd64,linux/arm64
           push: true
@@ -97,7 +97,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./frontend/Dockerfile
+          file: ./apps/web/Dockerfile
           target: production
           platforms: linux/amd64,linux/arm64
           push: true

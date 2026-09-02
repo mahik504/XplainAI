@@ -25,7 +25,7 @@ jobs:
       - name: Fail if generated clients are stale
         run: |
           pnpm contracts:gen
-          git diff --exit-code -- shared/packages
+          git diff --exit-code -- packages/
 
   frontend:
     name: Frontend
@@ -67,7 +67,7 @@ jobs:
         ports: ["6379:6379"]
     defaults:
       run:
-        working-directory: backend
+        working-directory: apps/api
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
@@ -96,4 +96,4 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: frontend/playwright-report/
+          path: apps/web/playwright-report/

@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend
+        working-directory: apps/api
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -98,7 +98,7 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: Audit Python Dependencies
-        working-directory: backend
+        working-directory: apps/api
         run: |
           uv sync --all-extras
           uv pip install pip-audit

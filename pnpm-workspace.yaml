@@ -1,4 +1,4 @@
 packages:
-  - frontend
-  - shared/packages/contracts-ts
-  - shared/codegen
+  - apps/web
+  - packages/contracts-ts
+  - packages/codegen

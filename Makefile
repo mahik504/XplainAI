@@ -6,7 +6,7 @@ help: ## List available targets
 
 bootstrap: ## Install all frontend and backend dependencies
 	pnpm install
-	cd backend && uv sync --all-extras
+	cd apps/api && uv sync --all-extras
 
 services-up: ## Start Postgres, Redis and the observability stack
 	docker compose up -d postgres redis otel-collector
@@ -21,19 +21,19 @@ dev-web: ## Run only the Vite dev server
 	pnpm --filter @neural-navigator/web dev
 
 dev-api: ## Run only the FastAPI dev server
-	cd backend && uv run uvicorn neural_navigator.main:app --reload
+	cd apps/api && uv run uvicorn neural_navigator.main:app --reload
 
 lint: ## Lint every package
 	pnpm -r lint
-	cd backend && uv run ruff check . && uv run ruff format --check .
+	cd apps/api && uv run ruff check . && uv run ruff format --check .
 
 typecheck: ## Static type checks for both languages
 	pnpm -r typecheck
-	cd backend && uv run mypy src
+	cd apps/api && uv run mypy src
 
 test: ## Run unit and integration tests
 	pnpm -r test
-	cd backend && uv run pytest
+	cd apps/api && uv run pytest
 
 test-e2e: ## Run Playwright end-to-end suite
 	pnpm --filter @neural-navigator/web test:e2e
@@ -43,15 +43,15 @@ contracts-lint: ## Validate OpenAPI and AsyncAPI documents
 
 contracts-gen: ## Regenerate typed clients from the contracts
 	pnpm contracts:gen
-	cd backend && uv run python ../tools/codegen/generate_python_models.py
+	cd apps/api && uv run python ../../tools/codegen/generate_python_models.py
 
 migrate: ## Apply database migrations
-	cd backend && uv run alembic upgrade head
+	cd apps/api && uv run alembic upgrade head
 
 build: ## Produce production artifacts
 	pnpm build
-	docker compose -f docker-compose.yml -f infra/docker/docker-compose.prod.yml build
+	docker compose -f docker-compose.yml -f infrastructure/docker/docker-compose.prod.yml build
 
 clean: ## Remove build and cache artifacts
-	rm -rf frontend/dist frontend/node_modules node_modules backend/.venv
+	rm -rf apps/web/dist apps/web/node_modules node_modules apps/api/.venv
 	find . -name '__pycache__' -type d -prune -exec rm -rf {} +

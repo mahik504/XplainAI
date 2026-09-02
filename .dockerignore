@@ -33,6 +33,10 @@ frontend/dist/
 frontend/build/
 frontend/playwright-report/
 frontend/test-results/
+apps/web/dist/
+apps/web/build/
+apps/web/playwright-report/
+apps/web/test-results/
 .turbo/
 .cache/
 

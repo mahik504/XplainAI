@@ -36,9 +36,14 @@ logs/
 *.log
 .data/
 backend/.data/
+apps/api/.data/
 
 # Local capture scratch (keep docs/screenshots and docs/demo tracked assets)
 *.mov
 .cache/
 .brain/
+.agents/
 backend/scripts/_ship_qa_last.json
+apps/api/scripts/_ship_qa_last.json
+
+

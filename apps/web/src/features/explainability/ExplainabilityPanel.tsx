@@ -1,0 +1,327 @@
+import type { Edge, Node, NodeMouseHandler } from "@xyflow/react";
+import { AnimatePresence } from "framer-motion";
+import {
+  Activity,
+  BookOpen,
+  Box,
+  ChevronDown,
+  FileText,
+  Maximize2,
+  Minimize2,
+  Split,
+  Terminal,
+  X,
+} from "lucide-react";
+import React, { useState } from "react";
+
+import { NodeInspector } from "@/components/common/NodeInspector";
+import { StructureLegend } from "@/features/demo";
+import { GraphPanel } from "@/features/graph-visualizer";
+import { hudAudio } from "@/features/audio/audio-sfx";
+import type { ClaimFocusMetrics } from "@/lib/claim-focus";
+import type { RetrievedSource } from "@/lib/sources";
+import type { StageEvent } from "@/lib/stage-graph";
+import type { ResponseStructureAnalysis } from "@/lib/xai";
+import { cn } from "@/lib/utils";
+import { useUIStore } from "@/stores/ui-store";
+
+import { AgentTerminalTab } from "./AgentTerminalTab";
+import { CounterPerspectiveCard } from "./CounterPerspectiveCard";
+import { MissingContextCard, type MissingContextItem } from "./MissingContextCard";
+import { RetrievedSourcesCard } from "./RetrievedSourcesCard";
+import { StageRail } from "./StageRail";
+import { StructuralSignalsCard } from "./StructuralSignalsCard";
+
+interface ExplainabilityPanelProps {
+  className?: string;
+  isStreaming: boolean;
+  runMode: string;
+  stageEvents: StageEvent[];
+  nodes: Node[];
+  edges: Edge[];
+  showingStructure: boolean;
+  claimFocusActive: boolean;
+  onExitClaimFocus?: () => void;
+  onNodeClick?: NodeMouseHandler<Node>;
+  viewKey: string;
+  graphTitle: string;
+  graphDescription: string;
+  responseAnalysis: ResponseStructureAnalysis | null;
+  claimMetrics: ClaimFocusMetrics | null;
+  retrievedSources: RetrievedSource[];
+  sourcesEmptyHint: boolean;
+  missingContext: MissingContextItem[];
+  counterPerspective: string | null;
+  selectedNodeId: string | null;
+  isMaximized?: boolean;
+  onToggleMaximize?: () => void;
+}
+
+type TabType = "topology" | "sources" | "signals" | "dialectic" | "terminal";
+
+export function ExplainabilityPanel({
+  className,
+  isStreaming,
+  runMode,
+  stageEvents,
+  nodes,
+  edges,
+  showingStructure,
+  claimFocusActive,
+  onExitClaimFocus,
+  onNodeClick,
+  viewKey,
+  graphTitle,
+  graphDescription,
+  responseAnalysis,
+  claimMetrics,
+  retrievedSources,
+  sourcesEmptyHint,
+  missingContext,
+  counterPerspective,
+  selectedNodeId,
+  isMaximized = false,
+  onToggleMaximize,
+}: ExplainabilityPanelProps) {
+  const [activeTab, setActiveTab] = useState<TabType>("topology");
+  const [stagesExpanded, setStagesExpanded] = useState(false);
+  const setInspectorOpen = useUIStore((state) => state.setInspectorOpen);
+
+  const showLegend =
+    Boolean(responseAnalysis && responseAnalysis.score.sentenceCount > 0) &&
+    (showingStructure || claimFocusActive);
+
+  const handleTabChange = (tab: TabType) => {
+    hudAudio.playClick(1400);
+    setActiveTab(tab);
+  };
+
+  return (
+    <aside
+      className={cn(
+        "relative flex h-full min-h-0 flex-col overflow-hidden bg-transparent border-l border-white/[0.08] transition-all",
+        className,
+      )}
+    >
+      {/* Header & Tabs */}
+      <header className="shrink-0 border-b border-white/[0.08] bg-transparent px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-bold tracking-tight text-cyan-300">
+              {claimFocusActive ? "CLAIM VERIFICATION" : "EXPLAIN COCKPIT"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-0.5 rounded-lg border border-white/[0.08] bg-black/40 p-0.5 font-mono">
+              <TabButton
+                active={activeTab === "topology"}
+                onClick={() => handleTabChange("topology")}
+                icon={Box}
+                label="3D Graph"
+                badge={nodes.length > 0 ? String(nodes.length) : undefined}
+              />
+              <TabButton
+                active={activeTab === "sources"}
+                onClick={() => handleTabChange("sources")}
+                icon={BookOpen}
+                label="Sources"
+                badge={retrievedSources.length > 0 ? String(retrievedSources.length) : undefined}
+              />
+              <TabButton
+                active={activeTab === "signals"}
+                onClick={() => handleTabChange("signals")}
+                icon={Activity}
+                label="Signals"
+              />
+              <TabButton
+                active={activeTab === "dialectic"}
+                onClick={() => handleTabChange("dialectic")}
+                icon={Split}
+                label="Dialectic"
+              />
+              <TabButton
+                active={activeTab === "terminal"}
+                onClick={() => handleTabChange("terminal")}
+                icon={Terminal}
+                label="Terminal"
+              />
+            </div>
+
+            {onToggleMaximize && (
+              <button
+                type="button"
+                onClick={() => {
+                  hudAudio.playClick(1600);
+                  onToggleMaximize();
+                }}
+                className="flex size-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+                title={isMaximized ? "Restore view" : "Maximize Explain Cockpit"}
+                aria-label={isMaximized ? "Restore view" : "Maximize Explain Cockpit"}
+              >
+                {isMaximized ? <Minimize2 className="size-3.5 text-cyan-300" /> : <Maximize2 className="size-3.5" />}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                hudAudio.playClick();
+                setInspectorOpen(false);
+              }}
+              className="flex size-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.08] hover:text-white"
+              title="Close panel"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible Live Stage Progress Bar */}
+        {(isStreaming || stageEvents.length > 0) && (
+          <div className="mt-1.5 border-t border-white/[0.06] pt-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                hudAudio.playClick(1500);
+                setStagesExpanded((prev) => !prev);
+              }}
+              className="flex w-full items-center justify-between rounded-lg bg-black/40 px-2 py-1 text-[11px] font-mono text-slate-300 hover:border-cyan-500/30 hover:bg-cyan-950/20 hover:text-cyan-200 transition border border-white/[0.06]"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className={cn("size-1.5 rounded-full", isStreaming ? "bg-cyan-400 animate-pulse" : "bg-emerald-400")} />
+                <span className="font-semibold text-white">Pipeline Stages</span>
+                <span className="text-[10px] text-slate-400">({stageEvents.length} events)</span>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] text-cyan-400/90">
+                <span>{stagesExpanded ? "Hide" : "Expand"}</span>
+                <ChevronDown className={cn("size-3 transition-transform duration-200", stagesExpanded && "rotate-180")} />
+              </div>
+            </button>
+            {stagesExpanded ? (
+              <div className="mt-2 max-h-48 overflow-y-auto px-1 scrollbar-slim border border-white/[0.06] rounded-lg p-2 bg-black/30">
+                <StageRail events={stageEvents} isStreaming={isStreaming} mode={runMode} />
+              </div>
+            ) : null}
+          </div>
+        )}
+      </header>
+
+      {/* Main Drawer Canvas Content */}
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        {activeTab === "topology" && (
+          <div className="relative size-full">
+            <GraphPanel
+              active
+              className="size-full border-0 bg-transparent shadow-none"
+              nodes={nodes}
+              edges={edges}
+              cameraEnabled
+              {...(onNodeClick ? { onNodeClick } : {})}
+              title={graphTitle}
+              description={graphDescription}
+              surface={showingStructure || claimFocusActive ? "structure" : "pipeline"}
+              {...(onExitClaimFocus ? { onExitClaimFocus } : {})}
+              viewKey={viewKey}
+              compactChrome
+            />
+            <AnimatePresence>
+              {selectedNodeId || claimFocusActive ? (
+                <NodeInspector
+                  key="inspector"
+                  graphSurface={showingStructure ? "structure" : "pipeline"}
+                />
+              ) : null}
+            </AnimatePresence>
+            {showLegend ? (
+              <div className="absolute bottom-2 left-2 z-20">
+                <StructureLegend compact />
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {activeTab === "sources" && (
+          <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
+            <RetrievedSourcesCard sources={retrievedSources} emptyHint={sourcesEmptyHint} />
+            {!sourcesEmptyHint && retrievedSources.length === 0 ? (
+              <div className="rounded-xl border border-white/[0.08] bg-[#0c1222]/50 p-6 text-center text-xs text-slate-400">
+                <FileText className="mx-auto size-8 text-cyan-600/50 mb-2" />
+                <p className="font-medium text-white">No retrieved sources for this inquiry.</p>
+                <p className="mt-1 text-slate-500">
+                  Gathered sources from ArXiv, Wikipedia, and the web will appear here.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {activeTab === "signals" && (
+          <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
+            <StructuralSignalsCard
+              analysis={responseAnalysis}
+              claimMetrics={claimMetrics}
+              retrievedSourcesCount={retrievedSources.length}
+            />
+          </div>
+        )}
+
+        {activeTab === "dialectic" && (
+          <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
+            <MissingContextCard items={missingContext} />
+            <CounterPerspectiveCard text={counterPerspective} />
+          </div>
+        )}
+
+        {activeTab === "terminal" && (
+          <div className="scrollbar-slim size-full space-y-4 overflow-y-auto p-4">
+            <AgentTerminalTab stageEvents={stageEvents} mode={runMode} />
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+  badge,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  badge?: string | undefined;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-mono transition",
+        active
+          ? "bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 shadow-sm"
+          : "text-slate-400 hover:text-cyan-200 hover:bg-white/[0.04]",
+      )}
+    >
+      <Icon className="size-3" />
+      <span>{label}</span>
+      {badge ? (
+        <span
+          className={cn(
+            "rounded-full px-1.5 text-[9px] font-mono",
+            active ? "bg-cyan-500 text-white" : "bg-cyan-950/60 text-cyan-300 border border-cyan-900/40",
+          )}
+        >
+          {badge}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
