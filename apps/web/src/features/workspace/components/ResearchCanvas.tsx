@@ -7,6 +7,7 @@ import {
   BookOpen,
   ArrowUp,
   Square,
+  Atom,
 } from "lucide-react";
 
 import { StageRail } from "@/features/explainability/StageRail";
@@ -16,6 +17,8 @@ import { EvidenceView } from "@/features/workspace/views/EvidenceView";
 import { GraphView } from "@/features/workspace/views/GraphView";
 import { SourcesView } from "@/features/workspace/views/SourcesView";
 import { ModeSelector } from "@/features/conversation/components/ModeSelector";
+import { SymbiontCore3D } from "@/features/venom/SymbiontCore3D";
+import { useGsapStaggerEntrance } from "@/hooks/use-gsap-transitions";
 import { cn } from "@/lib/utils";
 import { useSessionStore } from "@/stores/session-store";
 import { useUIStore, type CanvasTab } from "@/stores/ui-store";
@@ -74,6 +77,12 @@ export function ResearchCanvas({
   const domainSources = useSessionStore((state) => state.domainSources);
   const responseAnalysis = useSessionStore((state) => state.responseAnalysis);
 
+  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+  const hasFinishedRun = Boolean(lastAssistant && lastAssistant.content.trim().length > 0 && !isStreaming);
+
+  // GSAP stagger for empty state cards
+  useGsapStaggerEntrance(".venom-template-card", [hasFinishedRun]);
+
   useEffect(() => {
     if (!composerPrefill) return;
     setDraft(composerPrefill);
@@ -82,9 +91,6 @@ export function ResearchCanvas({
       composerRef.current?.focus();
     });
   }, [composerPrefill, clearComposerPrefill]);
-
-  const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
-  const hasFinishedRun = Boolean(lastAssistant && lastAssistant.content.trim().length > 0 && !isStreaming);
 
   const handleTabChange = (tab: CanvasTab) => {
     hudAudio.playClick(1100);
@@ -112,7 +118,7 @@ export function ResearchCanvas({
   return (
     <div className={cn("relative flex h-full w-full flex-col overflow-hidden bg-transparent", className)}>
       {/* Top Navigation Tab Ribbon */}
-      <div className="z-20 shrink-0 border-b border-white/[0.08] bg-[#070b16]/70 px-4 py-2 backdrop-blur-2xl">
+      <div className="z-20 shrink-0 border-b border-white/[0.08] bg-[#04060c]/80 px-4 py-2 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
           {/* Main 4 Canvas Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
@@ -207,26 +213,40 @@ export function ResearchCanvas({
         <div className="mx-auto max-w-7xl h-full flex flex-col">
           {/* Live Progress Stage Rail when streaming */}
           {isStreaming && (
-            <div className="mb-4 rounded-2xl border border-cyan-500/30 bg-[#070b16]/90 p-4 backdrop-blur-2xl shadow-[0_0_25px_rgba(0,240,255,0.15)] animate-in fade-in">
+            <div className="mb-4 rounded-2xl border border-cyan-500/30 bg-[#040712]/90 p-4 backdrop-blur-2xl shadow-[0_0_30px_rgba(0,240,255,0.2)] animate-in fade-in">
               <StageRail events={stageEvents} isStreaming={isStreaming} />
             </div>
           )}
 
           {/* Empty / Hero State when no research run has happened */}
           {!hasFinishedRun && !isStreaming ? (
-            <div className="flex flex-1 flex-col items-center justify-center text-center py-8">
-              <div className="max-w-2xl space-y-6">
-                <div className="space-y-2.5">
-                  <h1 className="font-mono text-3xl sm:text-4xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-white via-cyan-100 to-indigo-400">
-                    RESEARCH WORKSPACE
+            <div className="flex flex-1 flex-col items-center justify-center text-center py-4">
+              <div className="max-w-3xl space-y-5">
+                {/* 3D Symbiont Neural Core Visualizer */}
+                <div className="relative mx-auto size-44 sm:size-52">
+                  <SymbiontCore3D
+                    status={isStreaming ? "streaming" : "idle"}
+                    egiScore={egiScore ? Math.round(egiScore * 100) : 96}
+                    className="size-full"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3 py-1 text-[11px] font-mono text-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+                    <Atom className="size-3.5 text-cyan-400 animate-spin-slow" />
+                    <span>SOVEREIGN EPISTEMIC RESEARCH OS // v3.5.0</span>
+                  </div>
+
+                  <h1 className="font-mono text-2xl sm:text-4xl font-extrabold tracking-widest text-transparent bg-clip-text bg-gradient-to-br from-white via-cyan-100 to-indigo-400 drop-shadow-[0_0_20px_rgba(0,240,255,0.3)]">
+                    XPLAIN_AI WORKSPACE
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-300 font-sans">
+                  <p className="text-xs sm:text-sm text-slate-300 font-sans max-w-xl mx-auto">
                     Autonomous deep evidence synthesis, deterministic EGI 2.0 verification, and multi-dimensional knowledge topology.
                   </p>
                 </div>
 
                 {/* Quick Inquiries Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-2">
                   {RESEARCH_PROMPT_TEMPLATES.map((tmpl) => (
                     <button
                       key={tmpl.title}
@@ -236,13 +256,13 @@ export function ResearchCanvas({
                         setDraft(tmpl.prompt);
                         composerRef.current?.focus();
                       }}
-                      className="group flex flex-col justify-between rounded-xl border border-white/[0.08] bg-[#070b16]/60 p-4 transition-all duration-200 hover:border-cyan-500/40 hover:bg-cyan-500/10 hover:shadow-[0_0_20px_rgba(0,240,255,0.15)] backdrop-blur-xl"
+                      className="venom-template-card interactive-hover group flex flex-col justify-between rounded-xl border border-white/[0.08] bg-[#050914]/75 p-3.5 transition-all duration-200 hover:border-cyan-500/40 hover:bg-cyan-500/10 hover:shadow-[0_0_25px_rgba(0,240,255,0.2)] backdrop-blur-xl"
                     >
                       <div>
                         <span className="inline-block rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-mono text-cyan-300 uppercase">
                           {tmpl.topic}
                         </span>
-                        <h3 className="mt-2 text-xs font-semibold text-white group-hover:text-cyan-200 font-display">
+                        <h3 className="mt-1.5 text-xs font-semibold text-white group-hover:text-cyan-200 font-display">
                           {tmpl.title}
                         </h3>
                         <p className="mt-1 text-[11px] text-slate-400 line-clamp-2 leading-relaxed font-sans">
@@ -317,9 +337,9 @@ export function ResearchCanvas({
       </div>
 
       {/* Docked Prompt Composer at Bottom */}
-      <div className="shrink-0 border-t border-white/[0.08] bg-[#070b16]/80 p-3 sm:px-6 backdrop-blur-2xl">
+      <div className="shrink-0 border-t border-cyan-500/20 bg-[#04060c]/85 p-3 sm:px-6 backdrop-blur-2xl">
         <div className="mx-auto max-w-4xl">
-          <div className="relative rounded-2xl border border-white/[0.1] bg-black/40 p-2 shadow-2xl backdrop-blur-2xl focus-within:border-cyan-400 focus-within:shadow-[0_0_20px_rgba(0,240,255,0.2)] transition-all">
+          <div className="relative rounded-2xl border border-white/[0.1] bg-black/50 p-2 shadow-2xl backdrop-blur-2xl focus-within:border-cyan-400 focus-within:shadow-[0_0_25px_rgba(0,240,255,0.25)] transition-all">
             <textarea
               ref={composerRef}
               rows={2}

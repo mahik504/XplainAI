@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # --- Runtime -----------------------------------------------------------
     app_env: Environment = Environment.LOCAL
     project_name: str = "XplainAI"
-    version: str = "3.0.0"
+    version: str = "3.5.0"
     log_level: str = "INFO"
     log_format: LogFormat = LogFormat.CONSOLE
 

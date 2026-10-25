@@ -1,10 +1,11 @@
-import { Eye, PanelLeft, Settings, Volume2, VolumeX } from "lucide-react";
+import { Eye, PanelLeft, Settings, Volume2, VolumeX, Atom } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ModelSelector } from "@/components/brand/ModelSelector";
 import { XplainAiLogo } from "@/components/brand/XplainAiLogo";
 import { Button } from "@/components/ui/button";
 import { hudAudio } from "@/features/audio/audio-sfx";
+import { AboutManifestoModal } from "@/components/modals/AboutManifestoModal";
 import { cn } from "@/lib/utils";
 import { useConversationStore } from "@/stores/conversation-store";
 import { useSessionStore } from "@/stores/session-store";
@@ -32,6 +33,7 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
   const newChat = useConversationStore((state) => state.newChat);
 
   const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   useEffect(() => {
     setIsAudioMuted(hudAudio.isMuted());
@@ -52,124 +54,149 @@ export function TopNav({ connection = "offline" }: TopNavProps) {
       ? activeConv.title
       : firstUserMessage
         ? firstUserMessage.slice(0, 52) + (firstUserMessage.length > 52 ? "…" : "")
-        : "New research inquiry";
+        : "Autonomous research session";
 
   const totalClaims = responseAnalysis?.sentences?.filter((s) => s.category === "claim").length ?? 0;
   const totalSources = retrievedSources.length;
   const hasAnalysis = totalClaims > 0 || totalSources > 0;
 
   return (
-    <header className="relative z-30 flex h-13 shrink-0 items-center justify-between border-b border-white/[0.08] bg-[#070b16]/75 px-3 backdrop-blur-2xl sm:px-4">
-      {/* Left: Sidebar Toggle & Brand */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            hudAudio.playClick();
-            if (window.innerWidth < 1024) {
-              setMobileNavOpen(true);
-            } else {
-              toggleSidebar();
-            }
-          }}
-          className="flex min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.06] hover:text-white touch-manipulation"
-          title="Toggle history (Ctrl+B)"
-          aria-label="Toggle history"
-        >
-          <PanelLeft className="size-4" />
-        </button>
+    <>
+      <header className="relative z-30 flex h-13 shrink-0 items-center justify-between border-b border-cyan-500/20 bg-[#04060c]/85 px-3 backdrop-blur-2xl sm:px-4 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+        {/* Left: Sidebar Toggle & Brand */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              hudAudio.playClick();
+              if (window.innerWidth < 1024) {
+                setMobileNavOpen(true);
+              } else {
+                toggleSidebar();
+              }
+            }}
+            className="flex min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/[0.06] hover:text-white touch-manipulation"
+            title="Toggle history (Ctrl+B)"
+            aria-label="Toggle history"
+          >
+            <PanelLeft className="size-4" />
+          </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            hudAudio.playChirp();
-            void newChat();
-          }}
-          className="group flex min-h-[44px] sm:min-h-8 items-center gap-2.5 rounded-lg px-2 py-1 transition hover:bg-white/[0.04] touch-manipulation"
-        >
-          <XplainAiLogo size={24} />
-          <span className="font-mono text-sm font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-indigo-400 group-hover:from-white group-hover:to-cyan-200 transition-all duration-300">
-            XPLAIN_AI
+          <button
+            type="button"
+            onClick={() => {
+              hudAudio.playChirp();
+              void newChat();
+            }}
+            className="group flex min-h-[44px] sm:min-h-8 items-center gap-2.5 rounded-lg px-2 py-1 transition hover:bg-white/[0.04] touch-manipulation"
+          >
+            <XplainAiLogo size={24} />
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-sm font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-200 to-indigo-400 group-hover:from-white group-hover:to-cyan-200 transition-all duration-300 drop-shadow-[0_0_12px_rgba(0,240,255,0.4)]">
+                XPLAIN_AI
+              </span>
+              <span className="text-[10px] font-mono font-bold text-cyan-400/80 bg-cyan-950/40 border border-cyan-500/30 rounded px-1 py-0.2">
+                v3.5
+              </span>
+            </div>
+            <span
+              className={cn(
+                "size-1.5 rounded-full",
+                link === "live"
+                  ? "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+                  : link === "connecting"
+                    ? "bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]"
+                    : "bg-zinc-600",
+              )}
+              title={`Telemetry connection: ${link}`}
+            />
+          </button>
+        </div>
+
+        {/* Center: Conversation Title */}
+        <div className="hidden max-w-md truncate text-center md:block">
+          <span className="text-xs font-mono text-slate-400 tracking-wide truncate">
+            {conversationTitle}
           </span>
-          <span
-            className={cn(
-              "size-1.5 rounded-full",
-              link === "live"
-                ? "bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
-                : link === "connecting"
-                  ? "bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]"
-                  : "bg-zinc-600",
-            )}
-            title={`Telemetry connection: ${link}`}
-          />
-        </button>
-      </div>
+        </div>
 
-      {/* Center: Conversation Title */}
-      <div className="hidden max-w-md truncate text-center md:block">
-        <span className="text-xs font-mono text-slate-400 tracking-wide truncate">
-          {conversationTitle}
-        </span>
-      </div>
-
-      {/* Right: Quick Tools, Model Selector, Analysis Pill, Settings */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Audio SFX Toggle */}
-        <button
-          type="button"
-          onClick={handleToggleAudio}
-          className={cn(
-            "flex min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 items-center justify-center rounded-lg transition touch-manipulation",
-            isAudioMuted
-              ? "text-zinc-600 hover:text-zinc-400"
-              : "text-cyan-400/80 hover:bg-cyan-500/10 hover:text-cyan-300",
-          )}
-          title={isAudioMuted ? "Unmute audio SFX" : "Mute audio SFX"}
-          aria-label={isAudioMuted ? "Unmute audio SFX" : "Mute audio SFX"}
-        >
-          {isAudioMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-        </button>
-
-        {/* Analysis Cockpit Toggle */}
-        {hasAnalysis ? (
+        {/* Right: Quick Tools, Model Selector, Analysis Pill, Settings */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* About & Epistemic Specs Button */}
           <button
             type="button"
             onClick={() => {
               hudAudio.playSweep();
-              toggleInspector();
+              setAboutOpen(true);
             }}
-            className={cn(
-              "flex min-h-[44px] sm:min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono transition touch-manipulation",
-              inspectorOpen
-                ? "border-cyan-400/60 bg-cyan-500/15 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
-                : "border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200",
-            )}
-            title="Inspect 3D Knowledge Graph & Claims"
-            aria-label="Inspect 3D Knowledge Graph & Claims"
+            className="flex min-h-[44px] sm:min-h-8 items-center gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-2.5 py-1 text-xs font-mono text-cyan-300 hover:border-cyan-400/60 hover:bg-cyan-500/20 hover:text-white transition-all shadow-[0_0_15px_rgba(0,240,255,0.15)] touch-manipulation"
+            title="Read Epistemic Manifesto & Architecture Specifications"
+            aria-label="About & Specs"
           >
-            <Eye className="size-3.5 text-cyan-400" />
-            <span>Analysis</span>
-            <span className="rounded-full bg-cyan-500/20 px-1.5 py-0.2 text-[10px] text-cyan-300 border border-cyan-500/30">
-              {totalSources > 0 ? `${totalSources} sources` : `${totalClaims} claims`}
-            </span>
+            <Atom className="size-3.5 text-cyan-400 animate-spin-slow" />
+            <span className="hidden sm:inline">About &amp; Specs</span>
           </button>
-        ) : null}
 
-        <ModelSelector />
+          {/* Audio SFX Toggle */}
+          <button
+            type="button"
+            onClick={handleToggleAudio}
+            className={cn(
+              "flex min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 items-center justify-center rounded-lg transition touch-manipulation",
+              isAudioMuted
+                ? "text-zinc-600 hover:text-zinc-400"
+                : "text-cyan-400/80 hover:bg-cyan-500/10 hover:text-cyan-300",
+            )}
+            title={isAudioMuted ? "Unmute audio SFX" : "Mute audio SFX"}
+            aria-label={isAudioMuted ? "Unmute audio SFX" : "Mute audio SFX"}
+          >
+            {isAudioMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+          </button>
 
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 text-slate-400 hover:bg-white/[0.06] hover:text-white touch-manipulation"
-          onClick={() => {
-            hudAudio.playClick();
-            setSettingsOpen(true);
-          }}
-          aria-label="Open settings"
-        >
-          <Settings className="size-4" />
-        </Button>
-      </div>
-    </header>
+          {/* Analysis Cockpit Toggle */}
+          {hasAnalysis ? (
+            <button
+              type="button"
+              onClick={() => {
+                hudAudio.playSweep();
+                toggleInspector();
+              }}
+              className={cn(
+                "flex min-h-[44px] sm:min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-mono transition touch-manipulation",
+                inspectorOpen
+                  ? "border-cyan-400/60 bg-cyan-500/15 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+                  : "border-white/10 bg-white/[0.04] text-slate-300 hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200",
+              )}
+              title="Inspect 3D Knowledge Graph & Claims"
+              aria-label="Inspect 3D Knowledge Graph & Claims"
+            >
+              <Eye className="size-3.5 text-cyan-400" />
+              <span>Analysis</span>
+              <span className="rounded-full bg-cyan-500/20 px-1.5 py-0.2 text-[10px] text-cyan-300 border border-cyan-500/30">
+                {totalSources > 0 ? `${totalSources} sources` : `${totalClaims} claims`}
+              </span>
+            </button>
+          ) : null}
+
+          <ModelSelector />
+
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 size-8 text-slate-400 hover:bg-white/[0.06] hover:text-white touch-manipulation"
+            onClick={() => {
+              hudAudio.playClick();
+              setSettingsOpen(true);
+            }}
+            aria-label="Open settings"
+          >
+            <Settings className="size-4" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Epistemic Manifesto & Architecture Specs Modal */}
+      <AboutManifestoModal isOpen={aboutOpen} onClose={() => setAboutOpen(false)} />
+    </>
   );
 }

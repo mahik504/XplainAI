@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 
 import { AsciiTerrainBackground } from "@/components/common/AsciiTerrainBackground";
 import { AmbientShaderBackground } from "@/components/common/AmbientShaderBackground";
+import { VenomCursor } from "@/components/venom/VenomCursor";
 import { CommandPalette } from "@/components/common/CommandPalette";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ShortcutsHelpModal } from "@/components/common/ShortcutsHelpModal";
@@ -44,8 +45,9 @@ export function AppShell() {
     <ErrorBoundary fallbackType="full">
       <div
         style={{ "--glass-strength": glassStrength } as CSSProperties}
-        className="relative flex h-dvh w-full overflow-hidden bg-[#05070D] text-foreground font-sans"
+        className="relative flex h-dvh w-full overflow-hidden bg-[#020409] text-foreground font-sans cursor-default"
       >
+        <VenomCursor />
         <AsciiTerrainBackground />
         <AmbientShaderBackground />
 
@@ -59,7 +61,7 @@ export function AppShell() {
         </div>
 
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-          <SheetContent side="left" className="w-[min(20rem,88vw)] border-white/10 bg-[#070b16] p-0">
+          <SheetContent side="left" className="w-[min(20rem,88vw)] border-cyan-500/20 bg-[#040712] p-0 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
             <SheetHeader className="sr-only">
               <SheetTitle>Conversation history</SheetTitle>
             </SheetHeader>

@@ -38,7 +38,9 @@ logs/
 backend/.data/
 apps/api/.data/
 
-# Local capture scratch (keep docs/screenshots and docs/demo tracked assets)
+.freebuff/
+apps/web/dev-server.js
+
 *.mov
 .cache/
 .brain/

@@ -1,6 +1,6 @@
 {
   "name": "neural-navigator",
-  "version": "3.0.0",
+  "version": "3.5.0",
   "private": true,
   "description": "XplainAI — Explainability OS monorepo (internal package namespace: neural-navigator).",
   "packageManager": "pnpm@9.12.0",

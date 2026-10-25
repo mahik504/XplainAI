@@ -44,6 +44,19 @@ const FRAGMENT_SHADER = `
     return 130.0 * dot(m, g);
   }
 
+  // Viscous fluid warp representing organic tendril dynamics
+  vec2 tendrilWarp(vec2 p, float t) {
+    p += vec2(
+      sin(p.y * 2.8 + t * 0.45) * 0.28,
+      cos(p.x * 2.4 - t * 0.35) * 0.28
+    );
+    p += vec2(
+      cos(p.y * 5.2 - t * 0.2) * 0.12,
+      sin(p.x * 4.8 + t * 0.3) * 0.12
+    );
+    return p;
+  }
+
   void main() {
     vec2 st = gl_FragCoord.xy / u_resolution.xy;
     vec2 mouseNorm = u_mouse.xy / u_resolution.xy;
@@ -53,48 +66,54 @@ const FRAGMENT_SHADER = `
     p.x *= u_resolution.x / u_resolution.y;
 
     float distToMouse = length(st - mouseNorm);
-    float mouseWave = sin(distToMouse * 20.0 - u_time * 2.8) * exp(-distToMouse * 3.5) * 0.25;
+    float mouseWave = sin(distToMouse * 22.0 - u_time * 3.2) * exp(-distToMouse * 4.0) * 0.3;
 
-    float t = u_time * 0.16;
-    float n1 = snoise(p * 1.5 + vec2(t * 0.3, t * 0.18) + mouseWave);
-    float n2 = snoise(p * 3.0 - vec2(t * 0.22, t * 0.38) + n1 * 0.5);
-    float n3 = snoise(p * 6.0 + vec2(t * 0.45, t * 0.12) + n2 * 0.25);
+    float t = u_time * 0.14;
+    vec2 warpedP = tendrilWarp(p, t) + mouseWave;
 
-    float combined = (n1 * 0.5 + n2 * 0.35 + n3 * 0.15);
+    float n1 = snoise(warpedP * 1.8 + vec2(t * 0.2, t * 0.12));
+    float n2 = snoise(warpedP * 3.6 - vec2(t * 0.18, t * 0.28) + n1 * 0.45);
+    float n3 = snoise(warpedP * 7.2 + vec2(t * 0.32, t * 0.1) + n2 * 0.2);
 
-    // Luminous Sky Cyan / Deep Ocean / Cyber Indigo Palette
-    vec3 bgBase = vec3(0.015, 0.022, 0.045);       // #04060C deep cosmic void
-    vec3 cyanLaser = vec3(0.0, 0.94, 1.0);         // #00F0FF electric cyan
-    vec3 skyCyan = vec3(0.12, 0.65, 0.98);          // #1EA5FA sky blue
-    vec3 indigoEnergy = vec3(0.38, 0.40, 0.95);    // #6366F1 royal indigo
-    vec3 emeraldAccent = vec3(0.05, 0.85, 0.55);   // #0DD98C matrix emerald
+    float combined = (n1 * 0.55 + n2 * 0.32 + n3 * 0.13);
 
-    // Dynamic wave fields
-    float intensity1 = smoothstep(0.05, 0.65, combined);
-    float intensity2 = smoothstep(0.3, 0.85, n2);
-    float intensity3 = smoothstep(0.4, 0.95, n3);
+    // Deep Obsidian / Symbiont Bio-Luminescent Palette
+    vec3 bgBase = vec3(0.012, 0.016, 0.028);       // #030407 deep symbiotic void
+    vec3 venomCyan = vec3(0.0, 0.95, 1.0);        // #00F2FF plasma electric cyan
+    vec3 tendrilViolet = vec3(0.42, 0.22, 0.95);  // #6C38F2 royal symbiont violet
+    vec3 bioEmerald = vec3(0.0, 0.98, 0.58);      // #00FA94 bio-luminescent emerald
+    vec3 darkPlasma = vec3(0.04, 0.08, 0.18);
+
+    // Organic tendril edge thresholds
+    float intensity1 = smoothstep(0.08, 0.62, combined);
+    float intensity2 = smoothstep(0.32, 0.82, n2);
+    float intensity3 = smoothstep(0.45, 0.92, n3);
+
+    // Bio-tendril filaments (sharp electric edges)
+    float filament = pow(max(0.0, 1.0 - abs(n2)), 8.0) * 0.45;
 
     vec3 col = bgBase;
-    col += mix(indigoEnergy, cyanLaser, intensity1) * (intensity1 * 0.42);
-    col += mix(skyCyan, cyanLaser, intensity2) * (intensity2 * 0.32);
-    col += mix(emeraldAccent, skyCyan, intensity3) * (intensity3 * 0.18);
+    col += mix(darkPlasma, tendrilViolet, intensity1) * (intensity1 * 0.38);
+    col += mix(tendrilViolet, venomCyan, intensity2) * (intensity2 * 0.36);
+    col += mix(bioEmerald, venomCyan, intensity3) * (intensity3 * 0.22);
+    col += venomCyan * filament;
 
-    // Subtle tactical scanline matrix
-    float scanline = sin(gl_FragCoord.y * 1.4) * 0.035;
+    // Tactical scanline matrix
+    float scanline = sin(gl_FragCoord.y * 1.5) * 0.025;
     col -= vec3(scanline);
 
-    // Faint cyber grid
-    vec2 gridCoord = fract(st * vec2(48.0, 30.0));
-    float grid = (step(0.975, gridCoord.x) + step(0.975, gridCoord.y)) * 0.025;
-    col += vec3(grid) * cyanLaser;
+    // Faint neural grid
+    vec2 gridCoord = fract(st * vec2(54.0, 32.0));
+    float grid = (step(0.98, gridCoord.x) + step(0.98, gridCoord.y)) * 0.022;
+    col += vec3(grid) * venomCyan;
 
-    // Mouse interactive celestial spotlight
-    float mouseGlow = exp(-distToMouse * 2.0) * 0.35;
-    col += mix(cyanLaser, skyCyan, 0.5) * mouseGlow;
+    // Symbiont mouse interaction spotlight with chromatic pulse
+    float mouseGlow = exp(-distToMouse * 2.2) * 0.42;
+    col += mix(venomCyan, bioEmerald, 0.4) * mouseGlow;
 
-    // Soft border vignette
+    // Deep vignette
     float vignette = length(p);
-    col *= 1.0 - smoothstep(0.45, 1.35, vignette) * 0.45;
+    col *= 1.0 - smoothstep(0.4, 1.35, vignette) * 0.5;
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -131,49 +150,51 @@ export function AmbientShaderBackground() {
       fragmentShader: FRAGMENT_SHADER,
       uniforms: {
         u_time: { value: 0 },
-        u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-        u_mouse: { value: new THREE.Vector2(window.innerWidth * 0.5, window.innerHeight * 0.5) },
+        u_resolution: { value: new THREE.Vector2() },
+        u_mouse: { value: new THREE.Vector2(window.innerWidth / 2, window.innerHeight / 2) },
       },
       depthWrite: false,
       depthTest: false,
     });
 
     const geometry = new THREE.PlaneGeometry(2, 2);
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
+    const quad = new THREE.Mesh(geometry, material);
+    scene.add(quad);
 
     updateSize();
+    renderer.domElement.className = "absolute inset-0 w-full h-full pointer-events-none";
     container.appendChild(renderer.domElement);
 
     let animationFrameId: number;
-    let targetMouse = new THREE.Vector2(window.innerWidth * 0.5, window.innerHeight * 0.5);
-    let currentMouse = new THREE.Vector2(window.innerWidth * 0.5, window.innerHeight * 0.5);
+    let targetMouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let currentMouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 
-    const handleMouseMove = (e: MouseEvent) => {
-      targetMouse.set(e.clientX, window.innerHeight - e.clientY);
+    const onMouseMove = (e: MouseEvent) => {
+      targetMouse.x = e.clientX;
+      targetMouse.y = window.innerHeight - e.clientY;
     };
 
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    window.addEventListener("resize", updateSize, { passive: true });
+    const onResize = () => {
+      updateSize();
+    };
+
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
+    window.addEventListener("resize", onResize);
 
     const clock = new THREE.Clock();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      const prefersReduced =
-        typeof window !== "undefined" &&
-        Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
-      
-      const elapsedTime = clock.getElapsedTime();
-      if (material.uniforms.u_time) {
-        // Automatically animate u_time regardless of mouse activity
-        material.uniforms.u_time.value = elapsedTime;
-      }
 
-      // Smooth mouse interpolation
-      currentMouse.lerp(targetMouse, prefersReduced ? 1 : 0.05);
+      // Smooth mouse lerping
+      currentMouse.x += (targetMouse.x - currentMouse.x) * 0.05;
+      currentMouse.y += (targetMouse.y - currentMouse.y) * 0.05;
+
+      if (material.uniforms.u_time) {
+        material.uniforms.u_time.value = clock.getElapsedTime();
+      }
       if (material.uniforms.u_mouse) {
-        material.uniforms.u_mouse.value.copy(currentMouse);
+        material.uniforms.u_mouse.value.set(currentMouse.x, currentMouse.y);
       }
 
       renderer.render(scene, camera);
@@ -183,8 +204,8 @@ export function AmbientShaderBackground() {
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("resize", updateSize);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("resize", onResize);
       renderer.dispose();
       geometry.dispose();
       material.dispose();
@@ -197,7 +218,7 @@ export function AmbientShaderBackground() {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none bg-[#020409]"
       aria-hidden="true"
     />
   );
